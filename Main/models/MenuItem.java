@@ -1,3 +1,5 @@
+package models;
+
 public class MenuItem {
 
     // --- OOP CONCEPT: ENCAPSULATION & DATA HIDING (Module 2) ---

@@ -1,3 +1,5 @@
+package models;
+
 public class Appetizer extends MenuItem {
 
     private int piecesCount;

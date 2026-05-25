@@ -1,6 +1,8 @@
+package models;
+
 public class Dessert extends MenuItem {
 
     public Dessert(int id, String itemName, double price, int stockQuantity) {
-        super(id, itemName, price, stockQuantity, "Dessert");
+        super(id, itemName, price, stockQuantity, "models.Dessert");
     }
 }

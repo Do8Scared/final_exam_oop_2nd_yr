@@ -1,6 +1,10 @@
+package orders;
+
+import models.MenuItem;
+
 // --- OOP INTENT: ABSTRACTION (Module 4) ---
-// We use an interface to hide implementation details. 
-// This acts as a strict contract. Any class that implements OrderDAO 
+// We use an interface to hide implementation details.
+// This acts as a strict contract. Any class that implements orders.OrderDAO
 // is forced to create a checkout() method, but we don't care HOW they do it here.
 public interface OrderDAO {
 

@@ -1,3 +1,8 @@
+package Main;
+
+import database.DatabaseHelper;
+import models.MenuItem;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -94,7 +99,7 @@ public class Main {
     }
 
     // --- OOP INTENT: POLYMORPHISM IN ACTION (Module 4) ---
-    // Notice the parameter here is the INTERFACE (OrderDAO). 
+    // Notice the parameter here is the INTERFACE (orders.OrderDAO).
     // This method doesn't care if it's Take-Out or Dine-In; it just knows how to call checkout().
     private static void processOrder(OrderDAO orderType) {
         System.out.print("\nEnter the ID of the item to order: ");

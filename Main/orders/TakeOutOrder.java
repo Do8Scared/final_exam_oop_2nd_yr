@@ -1,3 +1,8 @@
+package orders;
+
+import database.DatabaseHelper;
+import models.MenuItem;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -8,7 +13,7 @@ public class TakeOutOrder implements OrderDAO {
     private static final double PACKAGING_FEE = 20.00;
 
     // --- OOP INTENT: POLYMORPHISM ---
-    // This is the exact same method signature as DineInOrder, but it behaves differently!
+    // This is the exact same method signature as orders.DineInOrder, but it behaves differently!
     // This is Polymorphism in action: one interface, multiple behaviors.
     @Override
     public void checkout(MenuItem item, int quantityOrdered) {
