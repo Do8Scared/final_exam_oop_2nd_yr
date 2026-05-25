@@ -9,6 +9,7 @@ public class MenuItem {
     private int stockQuantity;
     private String category;
 
+
     // CONSTRUCTORS
     public MenuItem(int id, String itemName, double price, int stockQuantity, String category) {
         this.id = id;

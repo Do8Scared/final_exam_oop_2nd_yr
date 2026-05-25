@@ -4,7 +4,7 @@ import java.sql.SQLException;
 
 public class DatabaseHelper {
 
-    // --- ENCAPSULATION: DATA HIDING ---
+    // --- ENCAPSULATION--
     // We store our database credentials as private constants.
     // This ensures no outside classes can accidentally modify our cloud connection details.
     // We are using the Supabase Session Pooler (port 6543) to ensure connection compatibility across different Wi-Fi networks.
