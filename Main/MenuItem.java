@@ -19,7 +19,7 @@ public class MenuItem {
         this.category = category;
     }
 
-    // --- OOP INTENT: METHOD OVERLOADING (Polymorphism) ---
+    //  METHOD OVERLOADING (Polymorphism) ---
     // Used when creating BRAND-NEW items to send to the database.
     // Supabase will automatically generate the real ID for us.
     public MenuItem(String itemName, double price, int stockQuantity, String category) {
