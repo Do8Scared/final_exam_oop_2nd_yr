@@ -19,6 +19,17 @@ public class MenuItem {
         this.category = category;
     }
 
+    // --- OOP INTENT: METHOD OVERLOADING (Polymorphism) ---
+    // Used when creating BRAND-NEW items to send to the database.
+    // Supabase will automatically generate the real ID for us.
+    public MenuItem(String itemName, double price, int stockQuantity, String category) {
+        this.id = 0; // Temporary dummy ID
+        this.itemName = itemName;
+        this.price = price;
+        this.stockQuantity = stockQuantity;
+        this.category = category;
+    }
+
     // --- GETTERS (Read Access) ---
     // We provide controlled ways for other classes to view the data.
     public int getId() {
@@ -30,7 +41,7 @@ public class MenuItem {
     public double getPrice() {
         return price;
     }
-    public int getQuantity() {
+    public int getStockQuantity() {
         return stockQuantity;
     }
     public String getCategory() {
