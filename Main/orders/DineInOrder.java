@@ -1,7 +1,8 @@
 package orders;
 
 import database.DatabaseHelper;
-import models.MenuItem;
+import models.*;
+
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -16,26 +17,46 @@ public class DineInOrder implements OrderDAO {
     @Override
     public void checkout(MenuItem item, int quantityOrdered) {
 
-        // 1. Calculate the standard price
         double totalAmount = item.getPrice() * quantityOrdered;
-        System.out.println("--- DINE-IN RECEIPT ---");
-        System.out.println("Item: " + item.getItemName());
-        System.out.println("Total Paid: ₱" + totalAmount);
+        System.out.println("\n--- DINE-IN RECEIPT ---");
+        System.out.println("Item: " + item.getItemName() + " (x" + quantityOrdered + ")");
 
-        // 2. Update the live database stock
-        // We use an UPDATE command to subtract the ordered amount from the cloud
+        // --- OOP INTENT: INSTANCEOF & DOWNCASTING (Proving Inheritance) ---
+        // We check what specific child class this item secretly is,
+        // then we unlock and print its unique attributes!
+        if (item instanceof Beverage) {
+            Beverage bev = (Beverage) item;
+            System.out.println("  -> [Volume: " + bev.getVolumeInMl() + "ml]");
+
+        } else if (item instanceof Appetizer) {
+            Appetizer app = (Appetizer) item;
+            System.out.println("  -> [Serving: " + app.getPiecesCount() + " pieces]");
+
+        } else if (item instanceof Soup) {
+            Soup soup = (Soup) item;
+            System.out.println("  -> [Preparation: " + (soup.isSpicy() ? "Spicy" : "Standard Non-Spicy") + "]");
+
+        } else if (item instanceof RiceBowl) {
+            RiceBowl bowl = (RiceBowl) item;
+            System.out.println("  -> [Protein: " + bowl.getMainProtein() + "]");
+
+        } else if (item instanceof AddOn) {
+            AddOn addon = (AddOn) item;
+            System.out.println("  -> [Type: " + (addon.isCondiment() ? "Condiment/Sauce" : "Solid Food") + "]");
+        }
+
+        System.out.println("Total Paid: ₱" + String.format("%.2f", totalAmount));
+        System.out.println("-----------------------");
+
+        // Update the live database stock
         String sql = "UPDATE menu_items SET stock_quantity = stock_quantity - ? WHERE id = ?";
 
-        // --- OOP INTENT: EXCEPTION HANDLING & RESOURCE CLEANUP (Module 5) ---
-        // Using 'try-with-resources' automatically closes the connection, preventing memory leaks!
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             pstmt.setInt(1, quantityOrdered);
-            pstmt.setInt(2, item.getId()); // This uses the final ID we locked down in Phase 3!
-
+            pstmt.setInt(2, item.getId());
             pstmt.executeUpdate();
-            System.out.println("[Database synced: Stock reduced for " + item.getItemName() + "]");
 
         } catch (SQLException e) {
             System.out.println("Transaction Failed: Could not update database.");

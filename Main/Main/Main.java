@@ -1,7 +1,7 @@
 package Main;
 
 import database.DatabaseHelper;
-import models.MenuItem;
+import models.*;
 import orders.DineInOrder;
 import orders.OrderDAO;
 import orders.TakeOutOrder;
@@ -354,6 +354,7 @@ private static void startNewOrder() {
         }
     }
 
+    // Helper method to retrieve a specific item and turn it into a Java Object
     private static MenuItem fetchItemById(int id) {
         String sql = "SELECT * FROM menu_items WHERE id = ?";
         try (Connection conn = DatabaseHelper.getConnection();
@@ -362,13 +363,39 @@ private static void startNewOrder() {
             pstmt.setInt(1, id);
             try (ResultSet rs = pstmt.executeQuery()) {
                 if (rs.next()) {
-                    return new MenuItem(
-                            rs.getInt("id"),
-                            rs.getString("item_name"),
-                            rs.getDouble("price"),
-                            rs.getInt("stock_quantity"),
-                            rs.getString("category")
-                    );
+                    int fetchedId = rs.getInt("id");
+                    String name = rs.getString("item_name");
+                    double price = rs.getDouble("price");
+                    int stock = rs.getInt("stock_quantity");
+                    String category = rs.getString("category");
+
+                    // --- OOP INTENT: POLYMORPHISM & UPCASTING ---
+                    // Every menu item category is successfully mapped to its specialized child class!
+                    if (category.equalsIgnoreCase("Beverages")) {
+                        return new Beverage(fetchedId, name, price, stock, category, 500);
+
+                    } else if (category.equalsIgnoreCase("Appetizer")) {
+                        return new Appetizer(fetchedId, name, price, stock, category, 4);
+
+                    } else if (category.equalsIgnoreCase("Dessert")) {
+                        return new Dessert(fetchedId, name, price, stock);
+
+                    } else if (category.equalsIgnoreCase("Soup")) {
+                        // Passing 'false' as default for isSpicy
+                        return new Soup(fetchedId, name, price, stock, category, false);
+
+                    } else if (category.equalsIgnoreCase("Rice Bowl")) {
+                        // Passing "Assorted" as a default protein
+                        return new RiceBowl(fetchedId, name, price, stock, category, "Assorted");
+
+                    } else if (category.equalsIgnoreCase("Add-Ons") || category.equalsIgnoreCase("Add-On")) {
+                        // Passing 'false' as default for isCondiment
+                        return new AddOn(fetchedId, name, price, stock, category, false);
+
+                    } else {
+                        // Strict fallback for any untracked categories
+                        return new MenuItem(fetchedId, name, price, stock, category);
+                    }
                 }
             }
         } catch (SQLException e) {
