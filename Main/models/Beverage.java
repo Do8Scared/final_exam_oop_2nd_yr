@@ -1,39 +1,57 @@
 package models;
 
-// --- OOP INTENT: INHERITANCE (Module 3) ---
-// By using the 'extends' keyword, models.Beverage instantly inherits the locked-down
-// ID, name, price, stock, and category attributes from the models.MenuItem parent class.
+/**
+ * Represents a beverage menu item with volume specification.
+ * Extends MenuItem with an additional volumeInMl attribute.
+ */
 public class Beverage extends MenuItem {
 
-    // --- OOP INTENT: SPECIALIZATION ---
-    // This is the unique trait. General food items don't track milliliters, 
-    // but beverages (like Ramune or Matcha Iced Tea) do.
     private int volumeInMl;
-    
-    // CONSTRUCTOR
+
+    /**
+     * Constructs a Beverage item with a specified volume.
+     *
+     * @param id the menu item ID assigned by the database
+     * @param itemName the name of the beverage
+     * @param price the price of the beverage
+     * @param stockQuantity the number of units in stock
+     * @param category the category this item belongs to
+     * @param volumeInMl the volume of the beverage in milliliters
+     */
     public Beverage(int id, String itemName, double price, int stockQuantity, String category, int volumeInMl) {
-
-        // --- OOP INTENT: CONSTRUCTOR CHAINING ('super' keyword) ---
-        // This MUST be the first line. We pass the main data UP to the models.MenuItem
-        // constructor so it can securely assign the 'final id' and other core details.
         super(id, itemName, price, stockQuantity, category);
-
-        // After the parent is successfully built, we handle our unique child data.
         this.volumeInMl = volumeInMl;
     }
 
-    // --- OOP INTENT: CHILD ENCAPSULATION ---
-    // We protect the unique attribute with a getter and a validated setter.
-
+    /**
+     * Gets the volume of the beverage in milliliters.
+     *
+     * @return the volume in ml
+     */
     public int getVolumeInMl() {
         return volumeInMl;
     }
 
+    /**
+     * Sets the volume of the beverage. Must be greater than 0 ml.
+     *
+     * @param volumeInMl the new volume in milliliters
+     */
     public void setVolumeInMl(int volumeInMl) {
         if (volumeInMl > 0) {
             this.volumeInMl = volumeInMl;
         } else {
-            System.out.println("Error: models.Beverage volume must be greater than 0 ml.");
+            System.out.println("Error: Beverage volume must be greater than 0 ml.");
         }
+    }
+
+    /**
+     * Returns the special details for this beverage (volume information).
+     *
+     * @return a string representation of the volume
+     */
+    @Override
+    public String getSpecialDetails() {
+        return "[Volume: " + getVolumeInMl() + "ml]";
     }
 }

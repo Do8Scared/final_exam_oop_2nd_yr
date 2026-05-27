@@ -1,0 +1,8 @@
+# Ignore local env file with secrets
+.env
+
+# Build and IDE artifacts
+out/
+*.class
+.idea/
+

@@ -1,14 +1,16 @@
 package orders;
 
-import models.MenuItem;
-
-// --- OOP INTENT: ABSTRACTION (Module 4) ---
-// We use an interface to hide implementation details.
-// This acts as a strict contract. Any class that implements orders.OrderDAO
-// is forced to create a checkout() method, but we don't care HOW they do it here.
+/**
+ * Interface for order fulfillment operations.
+ * Defines the contract that all order types must follow.
+ */
 public interface OrderDAO {
 
-    // Notice there are no curly braces {} or logic here! Just the method signature.
-    void checkout(MenuItem item, int quantityOrdered);
+    /**
+     * Returns the packaging or fulfillment fee associated with this order type.
+     *
+     * @return the packaging fee amount
+     */
+    double getPackagingFee();
 
 }
