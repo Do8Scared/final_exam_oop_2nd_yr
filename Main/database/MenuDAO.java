@@ -3,13 +3,18 @@ package database;
 import models.*;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Data access object for menu item operations.
  * Handles fetching, displaying, and category management of menu items.
  */
 public class MenuDAO {
+
+    private static final String CURRENCY_SYMBOL = "₱";
+    private static final String WARN = ">> [WARN]";
 
     /**
      * Fetches a single menu item by ID, converting the database record into a polymorphic MenuItem subclass.
@@ -31,13 +36,17 @@ public class MenuDAO {
                     String name = rs.getString("item_name");
                     double price = rs.getDouble("price");
                     int stock = rs.getInt("stock_quantity");
-                    String category = rs.getString("category");
+                    String category = normalizeCategory(rs.getString("category"));
+                    if (category.isEmpty()) {
+                        System.out.println(WARN + " Menu item " + fetchedId + " has invalid category. Loading as generic item.");
+                        return new MenuItem(fetchedId, name, price, stock, "Unknown");
+                    }
 
                     String specialAttr = rs.getString("special_attribute");
-                    if (specialAttr == null) specialAttr = "Standard";
+                    if (specialAttr == null || specialAttr.trim().isEmpty()) specialAttr = "Standard";
 
                     if (category.equalsIgnoreCase("Beverages")) {
-                        int volume = parseIntOrDefault(specialAttr.replace("ml", "").trim(), 500, "beverage volume");
+                        int volume = parseVolumeOrDefault(specialAttr, 500);
                         return new Beverage(fetchedId, name, price, stock, category, volume);
 
                     } else if (category.equalsIgnoreCase("Appetizer")) {
@@ -59,7 +68,7 @@ public class MenuDAO {
                         return new AddOn(fetchedId, name, price, stock, category, isCondiment);
 
                     } else {
-                        System.out.println(">> [WARN] Unrecognized menu category '" + category + "' for item ID " + fetchedId + ". Loading as a generic menu item.");
+                        System.out.println(WARN + " Unrecognized menu category '" + category + "' for item ID " + fetchedId + ". Loading as a generic menu item.");
                         return new MenuItem(fetchedId, name, price, stock, category);
                     }
                 }
@@ -91,7 +100,7 @@ public class MenuDAO {
                 boolean foundItems = false;
                 while (rs.next()) {
                     foundItems = true;
-                    System.out.printf("%-5d %-25s ₱%-9.2f %-10d %-15s\n",
+                    System.out.printf("%-5d %-25s " + CURRENCY_SYMBOL + "%-9.2f %-10d %-15s\n",
                             rs.getInt("id"),
                             rs.getString("item_name"),
                             rs.getDouble("price"),
@@ -117,18 +126,25 @@ public class MenuDAO {
      * @return a list of category names
      */
     public static List<String> getActiveCategories() {
-        List<String> categories = new ArrayList<>();
+        Map<String, String> normalized = new LinkedHashMap<>();
         String sql = "SELECT DISTINCT category FROM menu_items WHERE is_active = TRUE ORDER BY category";
         try (Connection conn = DatabaseHelper.getConnection();
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                categories.add(rs.getString("category"));
+                String raw = normalizeCategory(rs.getString("category"));
+                if (raw.isEmpty()) {
+                    continue;
+                }
+                String key = raw.toLowerCase();
+                if (!normalized.containsKey(key)) {
+                    normalized.put(key, raw);
+                }
             }
         } catch (SQLException e) {
             System.out.println("Error loading categories: " + e.getMessage());
         }
-        return categories;
+        return new ArrayList<>(normalized.values());
     }
 
     /**
@@ -138,7 +154,7 @@ public class MenuDAO {
      */
     public static void printItemsByCategory(String category) {
         System.out.println("\n--- " + category.toUpperCase() + " ---");
-        String sql = "SELECT id, item_name, price, stock_quantity FROM menu_items WHERE category = ? AND is_active = TRUE";
+        String sql = "SELECT id, item_name, price, stock_quantity FROM menu_items WHERE LOWER(category) = LOWER(?) AND is_active = TRUE";
         try (Connection conn = DatabaseHelper.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, category);
@@ -148,7 +164,7 @@ public class MenuDAO {
                     hasItems = true;
                     System.out.println("ID: " + rs.getInt("id") +
                             " | " + rs.getString("item_name") +
-                            " - ₱" + String.format("%.2f", rs.getDouble("price")) +
+                            " - " + CURRENCY_SYMBOL + String.format("%.2f", rs.getDouble("price")) +
                             " (Stock: " + rs.getInt("stock_quantity") + ")");
                 }
                 if (!hasItems) System.out.println("No items available in this category.");
@@ -167,11 +183,62 @@ public class MenuDAO {
      * @return the parsed integer, or the fallback value if parsing fails
      */
     private static int parseIntOrDefault(String value, int fallback, String context) {
+        if (value == null) {
+            System.out.println(WARN + " Could not parse " + context + " from <null>. Using " + fallback + ".");
+            return fallback;
+        }
         try {
             return Integer.parseInt(value.trim());
         } catch (NumberFormatException e) {
-            System.out.println(">> [WARN] Could not parse " + context + " from '" + value + "'. Using " + fallback + ".");
+            System.out.println(WARN + " Could not parse " + context + " from '" + value + "'. Using " + fallback + ".");
             return fallback;
         }
+    }
+
+    private static int parseVolumeOrDefault(String input, int fallback) {
+        if (input == null || input.trim().isEmpty()) return fallback;
+        String cleaned = input.toUpperCase().replaceAll("[^0-9]", "").trim();
+        if (cleaned.isEmpty()) return fallback;
+        try {
+            int vol = Integer.parseInt(cleaned);
+            return vol > 0 ? vol : fallback;
+        } catch (NumberFormatException e) {
+            return fallback;
+        }
+    }
+
+    private static String normalizeCategory(String category) {
+        if (category == null) {
+            return "";
+        }
+        String trimmed = category.trim();
+        if (trimmed.isEmpty()) return "";
+        String lower = trimmed.toLowerCase();
+
+        if (lower.equals("beverage") || lower.equals("beverages")) return "Beverages";
+        if (lower.equals("appetizer") || lower.equals("appetizers")) return "Appetizer";
+        if (lower.equals("dessert") || lower.equals("desserts")) return "Dessert";
+        if (lower.equals("soup") || lower.equals("soups")) return "Soup";
+        if (lower.equals("rice bowl") || lower.equals("ricebowl") || lower.equals("rice bowls")) return "Rice Bowl";
+        if (lower.equals("add-on") || lower.equals("add-ons") || lower.equals("addons")) return "Add-Ons";
+
+        return toTitleCase(trimmed);
+    }
+
+    private static String toTitleCase(String value) {
+        String[] parts = value.trim().split("\\s+");
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].isEmpty()) continue;
+            String word = parts[i];
+            builder.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                builder.append(word.substring(1).toLowerCase());
+            }
+            if (i < parts.length - 1) {
+                builder.append(' ');
+            }
+        }
+        return builder.toString().trim();
     }
 }

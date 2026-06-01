@@ -2,9 +2,9 @@ package orders;
 
 /**
  * Represents a dine-in order with no additional packaging fees.
- * Implements the OrderDAO interface for order type-specific behavior.
+ * Implements the FulfillmentType interface for order type-specific behavior.
  */
-public class DineInOrder implements OrderDAO {
+public class DineInOrder implements FulfillmentType {
 
     /**
      * Initializes a dine-in order.

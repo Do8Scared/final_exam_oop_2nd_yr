@@ -1,5 +1,7 @@
 package models;
 
+import java.math.BigDecimal;
+
 /**
  * Represents a single line item in a customer's shopping cart.
  * Stores a MenuItem reference with a quantity and captures the unit price at the time of addition.
@@ -18,9 +20,15 @@ public class CartItem {
      * @param quantity the number of units of this item
      */
     public CartItem(MenuItem item, int quantity) {
+        if (item == null) {
+            throw new IllegalArgumentException("CartItem requires a non-null MenuItem.");
+        }
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("CartItem quantity must be greater than zero.");
+        }
         this.item = item;
         this.quantity = quantity;
-        this.unitPrice = (item != null) ? item.getPrice() : 0;
+        this.unitPrice = item.getPrice();
     }
 
     /**
@@ -38,8 +46,11 @@ public class CartItem {
      * @param item the new MenuItem
      */
     public void setItem(MenuItem item) {
+        if (item == null) {
+            throw new IllegalArgumentException("CartItem requires a non-null MenuItem.");
+        }
         this.item = item;
-        this.unitPrice = (item != null) ? item.getPrice() : 0;
+        this.unitPrice = item.getPrice();
     }
 
     /**
@@ -57,7 +68,22 @@ public class CartItem {
      * @param quantity the new quantity
      */
     public void setQuantity(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("CartItem quantity must be greater than zero.");
+        }
         this.quantity = quantity;
+    }
+
+    /**
+     * Refreshes the unit price based on the latest menu item price.
+     *
+     * @param newUnitPrice the updated unit price
+     */
+    public void setUnitPrice(double newUnitPrice) {
+        if (newUnitPrice < 0) {
+            throw new IllegalArgumentException("Unit price cannot be negative.");
+        }
+        this.unitPrice = newUnitPrice;
     }
 
     /**
@@ -76,5 +102,14 @@ public class CartItem {
      */
     public double getSubtotal() {
         return unitPrice * quantity;
+    }
+
+    /**
+     * Calculates the subtotal using BigDecimal for monetary precision.
+     *
+     * @return the line subtotal as BigDecimal
+     */
+    public BigDecimal getSubtotalDecimal() {
+        return BigDecimal.valueOf(unitPrice).multiply(BigDecimal.valueOf(quantity));
     }
 }

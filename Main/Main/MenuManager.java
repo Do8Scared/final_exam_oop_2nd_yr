@@ -12,15 +12,10 @@ import java.sql.SQLException;
  */
 public class MenuManager {
 
-    /**
-     * Adds a menu item to the database with default actor "unknown".
-     *
-     * @param item the MenuItem to add
-     * @param specialAttribute the special attribute value (e.g., volume, spice level, protein)
-     */
-    public static void addMenuItem(MenuItem item, String specialAttribute) {
-        addMenuItem(item, specialAttribute, "unknown");
-    }
+    private static final String INFO = ">> [INFO]";
+    private static final String WARN = ">> [WARN]";
+    private static final String ERROR = ">> [ERROR]";
+    private static final String SUCCESS = ">> [SUCCESS]";
 
     /**
      * Adds a menu item to the database with the specified special attribute and actor information.
@@ -29,8 +24,9 @@ public class MenuManager {
      * @param item the MenuItem to add
      * @param specialAttribute the special attribute value (e.g., volume, spice level, protein)
      * @param actor the user or system identifier performing the action (for audit purposes)
+     * @return true if the insert and audit succeeded, false otherwise
      */
-    public static void addMenuItem(MenuItem item, String specialAttribute, String actor) {
+    public static boolean addMenuItem(MenuItem item, String specialAttribute, String actor) {
         String sql = "INSERT INTO menu_items (item_name, price, stock_quantity, category, special_attribute) VALUES (?, ?, ?, ?, ?) RETURNING id";
 
         try (Connection conn = DatabaseHelper.getConnection();
@@ -64,15 +60,24 @@ public class MenuManager {
                 DatabaseHelper.insertAudit(conn, actor, "MENU_ITEM_CREATED", String.valueOf(createdId), details);
 
                 conn.commit();
-                System.out.println("\n[SYSTEM] Success! " + item.getItemName() + " was added to the live database.");
+                System.out.println("\n" + SUCCESS + " " + item.getItemName() + " was added to the live database.");
+                return true;
             } else {
                 conn.rollback();
-                System.out.println("\n[SYSTEM ERROR] Menu item insert did not return a new ID.");
+                System.out.println("\n" + ERROR + " Menu item insert did not return a new ID.");
+                return false;
             }
 
         } catch (SQLException e) {
-            System.out.println("\n[SYSTEM ERROR] Could not add the menu item to the database.");
-            System.out.println("Error details: " + e.getMessage());
+            System.out.println("\n" + ERROR + " Could not add the menu item to the database.");
+            System.out.println(WARN + " Error details: " + e.getMessage());
+            try {
+                String details = String.format("{\"error\":\"%s\"}", escapeJson(e.getMessage()));
+                DatabaseHelper.insertAudit(actor, "MENU_ITEM_CREATE_FAILED", item.getItemName(), details);
+            } catch (SQLException logEx) {
+                System.out.println(WARN + " Failed to write audit log for menu item failure: " + logEx.getMessage());
+            }
+            return false;
         }
     }
 
@@ -86,7 +91,10 @@ public class MenuManager {
         if (s == null) return "";
         return s.replace("\\", "\\\\")
                 .replace("\"", "\\\"")
+                .replace("\b", "\\b")
+                .replace("\f", "\\f")
                 .replace("\n", "\\n")
-                .replace("\r", "\\r");
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }

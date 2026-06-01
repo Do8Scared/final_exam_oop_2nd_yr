@@ -1,10 +1,21 @@
 package Main;
 
 import config.Dotenv;
-import database.*;
-import models.*;
+import database.DatabaseHelper;
+import database.MenuDAO;
+import database.OrderDAO;
+import models.CartItem;
+import models.MenuItem;
+import orders.DineInOrder;
+import orders.FulfillmentType;
+import orders.TakeOutOrder;
 
-import java.util.*;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 /**
  * Main point-of-sale system for Garahe Ni Mateicla.
@@ -15,9 +26,17 @@ public class Main {
     private static final Scanner scanner = new Scanner(System.in);
     private static int failedPinAttempts = 0;
     private static long lockoutEndTime = 0;
+    private static final Object LOCKOUT_LOCK = new Object();
+
+    private static final String CURRENCY_SYMBOL = "₱";
+    private static final String INFO = ">> [INFO]";
+    private static final String WARN = ">> [WARN]";
+    private static final String ERROR = ">> [ERROR]";
+    private static final String SUCCESS = ">> [SUCCESS]";
 
     public static void main(String[] args) {
         Dotenv.loadIfPresent();
+        validateStartupConfiguration();
 
         boolean isRunning = true;
 
@@ -86,7 +105,7 @@ public class Main {
                         int itemId = getValidIntegerInput("Enter Item ID to add (or 0 to go back): ");
                         if (itemId == 0) break;
 
-                        MenuItem selectedItem = database.MenuDAO.fetchItemById(itemId);
+                        MenuItem selectedItem = MenuDAO.fetchItemById(itemId);
                         if (selectedItem != null) {
                             int qty = getValidIntegerInput("Enter quantity for " + selectedItem.getItemName() + ": ");
 
@@ -104,19 +123,19 @@ public class Main {
                             if (qty > 0 && selectedItem.getStockQuantity() >= totalRequestedQty) {
                                 if (existingItem != null) {
                                     existingItem.setQuantity(totalRequestedQty);
-                                    System.out.println(">> SUCCESS: Updated " + selectedItem.getItemName() + " to " + totalRequestedQty + " items.");
+                                    System.out.println(SUCCESS + " Updated " + selectedItem.getItemName() + " to " + totalRequestedQty + " items.");
                                 } else {
                                     activeCart.add(new CartItem(selectedItem, qty));
-                                    System.out.println(">> SUCCESS: Added to cart.");
+                                    System.out.println(SUCCESS + " Added to cart.");
                                 }
                                 addingItem = false;
                             } else if (qty <= 0) {
-                                System.out.println(">> ERROR: Quantity must be greater than zero.");
+                                System.out.println(ERROR + " Quantity must be greater than zero.");
                             } else {
-                                System.out.println(">> ERROR: Insufficient stock. You have " + currentQtyInCart + " in cart, and cloud stock is " + selectedItem.getStockQuantity() + ".");
+                                System.out.println(ERROR + " Insufficient stock. You have " + currentQtyInCart + " in cart, and cloud stock is " + selectedItem.getStockQuantity() + ".");
                             }
                         } else {
-                            System.out.println(">> ERROR: ID not found. Please try again.");
+                            System.out.println(ERROR + " ID not found. Please try again.");
                         }
                     }
                     break;
@@ -131,13 +150,17 @@ public class Main {
 
                 case 4:
                     if (activeCart.isEmpty()) {
-                        System.out.println(">> Cannot checkout an empty cart!");
+                        System.out.println(ERROR + " Cannot checkout an empty cart!");
                     } else {
                         System.out.println("\n--- CHECKOUT FULFILLMENT ---");
                         System.out.println("[1] Dine-In");
                         System.out.println("[2] Take-Out");
                         int typeChoice = getValidIntegerInput("Select Order Type: ");
-                        orders.OrderDAO fulfillment = (typeChoice == 2) ? new orders.TakeOutOrder(getConfiguredTakeOutFee()) : new orders.DineInOrder();
+                        if (typeChoice != 1 && typeChoice != 2) {
+                            System.out.println(ERROR + " Invalid order type selection.");
+                            break;
+                        }
+                        FulfillmentType fulfillment = (typeChoice == 2) ? new TakeOutOrder(getConfiguredTakeOutFee()) : new DineInOrder();
                         String orderType = (typeChoice == 2) ? "Take-Out" : "Dine-In";
 
                         System.out.println("\n--- PAYMENT METHOD ---");
@@ -151,43 +174,50 @@ public class Main {
                         if (payChoice == 3) paymentMethod = "Maya";
 
                         double amountTendered = 0;
-                        double packagingFee = fulfillment.getPackagingFee();
-                        if (paymentMethod.equals("Cash")) {
-                            double subtotal = 0;
-                            for(CartItem item : activeCart) subtotal += item.getSubtotal();
+                        BigDecimal packagingFee = BigDecimal.valueOf(fulfillment.getPackagingFee()).setScale(2, RoundingMode.HALF_UP);
+                        BigDecimal subtotal = calculateCartSubtotal(activeCart);
+                        BigDecimal grandTotal = subtotal.add(packagingFee).setScale(2, RoundingMode.HALF_UP);
 
-                            double grandTotal = Math.round((subtotal + packagingFee) * 100.0) / 100.0;
+                        System.out.println("\nGrand Total to Pay: " + CURRENCY_SYMBOL + grandTotal.toPlainString());
 
-                            System.out.println("\nGrand Total to Pay: ₱" + String.format("%.2f", grandTotal));
+                        if (paymentMethod.equalsIgnoreCase("Cash")) {
                             while (true) {
-                                amountTendered = getValidDoubleInput("Enter Amount Tendered: ₱");
-                                if (amountTendered >= grandTotal) {
+                                amountTendered = getValidDoubleInput("Enter Amount Tendered: " + CURRENCY_SYMBOL);
+                                if (BigDecimal.valueOf(amountTendered).compareTo(grandTotal) >= 0) {
                                     break;
                                 } else {
-                                    System.out.println(">> [ERROR] Short payment! Amount tendered must meet the grand total.");
+                                    System.out.println(ERROR + " Short payment! Amount tendered must meet the grand total.");
                                 }
+                            }
+                        } else {
+                            System.out.println(INFO + " Please transfer via " + paymentMethod + " and confirm payment.");
+                            System.out.print("Confirm payment received? (Y/N): ");
+                            String confirm = scanner.nextLine().trim();
+                            if (!confirm.equalsIgnoreCase("Y")) {
+                                System.out.println(WARN + " Payment not confirmed. Returning to cart.");
+                                break;
                             }
                         }
 
-                        System.out.println("\n>> Connecting to Supabase Cloud securely...");
-                        boolean success = database.OrderDAO.processCheckout(activeCart, orderType, paymentMethod, amountTendered, packagingFee);
+                        System.out.println("\n" + INFO + " Connecting to Supabase Cloud securely...");
+                        boolean success = OrderDAO.processCheckout(activeCart, orderType, paymentMethod, amountTendered, packagingFee.doubleValue());
 
                         if (success) {
                             activeCart.clear();
                             isOrdering = false;
                         } else {
-                            System.out.println(">> System recovered safely. You can try checking out again or edit items.");
+                            System.out.println(WARN + " System recovered safely. You can try checking out again or edit items.");
                         }
                     }
                     break;
 
                 case 5:
-                    System.out.println(">> Transaction Cancelled. Cart discarded.");
+                    System.out.println(INFO + " Transaction Cancelled. Cart discarded.");
                     isOrdering = false;
                     break;
 
                 default:
-                    System.out.println(">> Invalid action.");
+                    System.out.println(ERROR + " Invalid action.");
             }
         }
     }
@@ -196,10 +226,10 @@ public class Main {
      * Displays a numbered list of menu categories and allows the user to view items by category.
      */
     private static void handleCategoryFilter() {
-        List<String> categories = database.MenuDAO.getActiveCategories();
+        List<String> categories = MenuDAO.getActiveCategories();
 
         if (categories.isEmpty()) {
-            System.out.println(">> No categories found in the database.");
+            System.out.println(WARN + " No categories found in the database.");
             return;
         }
 
@@ -213,9 +243,9 @@ public class Main {
 
         if (choice > 0 && choice <= categories.size()) {
             String selectedCategory = categories.get(choice - 1);
-            database.MenuDAO.printItemsByCategory(selectedCategory);
+            MenuDAO.printItemsByCategory(selectedCategory);
         } else if (choice != categories.size() + 1) {
-            System.out.println(">> Invalid selection.");
+            System.out.println(ERROR + " Invalid selection.");
         }
     }
 
@@ -225,11 +255,11 @@ public class Main {
      */
     private static void handleAdminAddNewItem() {
         System.out.println("\n--- ADD NEW MENU ITEM ---");
-        String newName = getNonEmptyInput("Enter Item Name: ");
+        String newName = getValidMenuItemName("Enter Item Name: ");
         double newPrice = getPositiveDoubleInput("Enter Price: ");
         int newStock = getNonNegativeIntegerInput("Enter Stock Quantity: ");
 
-        List<String> categories = database.MenuDAO.getActiveCategories();
+        List<String> categories = MenuDAO.getActiveCategories();
         System.out.println("\n--- SELECT CATEGORY ---");
         for (int i = 0; i < categories.size(); i++) {
             System.out.println("[" + (i + 1) + "] " + categories.get(i));
@@ -241,7 +271,7 @@ public class Main {
         while (true) {
             catChoice = getValidIntegerInput("Select a category option: ");
             if (catChoice >= 1 && catChoice <= newCatOption) break;
-            System.out.println(">> [ERROR] Invalid selection.");
+            System.out.println(ERROR + " Invalid selection.");
         }
 
         String newCategory;
@@ -250,6 +280,7 @@ public class Main {
         } else {
             newCategory = categories.get(catChoice - 1);
         }
+        newCategory = normalizeCategory(newCategory);
 
         String specialAttrPrompt = "Enter Special Attribute (or press Enter for Standard): ";
         if (newCategory.equalsIgnoreCase("Beverages") || newCategory.equalsIgnoreCase("Beverage")) {
@@ -273,7 +304,10 @@ public class Main {
         }
 
         MenuItem newItem = new MenuItem(newName, newPrice, newStock, newCategory);
-        MenuManager.addMenuItem(newItem, specialAttr, "admin");
+        boolean added = MenuManager.addMenuItem(newItem, specialAttr, "admin");
+        if (!added) {
+            System.out.println(ERROR + " Menu item was not added. Please retry.");
+        }
     }
 
     /**
@@ -282,7 +316,7 @@ public class Main {
     private static void viewLiveMenu() {
         System.out.println("\n--- LIVE CLOUD MENU ---");
         String sql = "SELECT * FROM menu_items ORDER BY id ASC";
-        database.MenuDAO.executeSelectQuery(sql, null);
+        MenuDAO.executeSelectQuery(sql, null);
     }
 
     /**
@@ -304,10 +338,10 @@ public class Main {
                 subtotal += itemTotal;
 
                 System.out.println(" [" + (i + 1) + "] " + c.getItem().getItemName() +
-                        " (x" + c.getQuantity() + ") -> ₱" + String.format("%.2f", itemTotal));
+                        " (x" + c.getQuantity() + ") -> " + CURRENCY_SYMBOL + String.format("%.2f", itemTotal));
             }
             System.out.println("----------------------------------------");
-            System.out.println(" RUNNING SUBTOTAL: ₱" + String.format("%.2f", subtotal));
+            System.out.println(" RUNNING SUBTOTAL: " + CURRENCY_SYMBOL + String.format("%.2f", subtotal));
         }
         System.out.println("========================================");
     }
@@ -327,12 +361,12 @@ public class Main {
 
             if (newQty <= 0) {
                 cart.remove(index);
-                System.out.println(">> Item removed from cart.");
+                System.out.println(INFO + " Item removed from cart.");
             } else if (newQty <= itemToEdit.getItem().getStockQuantity()) {
                 itemToEdit.setQuantity(newQty);
-                System.out.println(">> Quantity updated.");
+                System.out.println(SUCCESS + " Quantity updated.");
             } else {
-                System.out.println(">> ERROR: Cannot update. Only " + itemToEdit.getItem().getStockQuantity() + " available in stock.");
+                System.out.println(ERROR + " Cannot update. Only " + itemToEdit.getItem().getStockQuantity() + " available in stock.");
             }
         } else {
             System.out.println(">> Invalid line number.");
@@ -349,7 +383,7 @@ public class Main {
         int index = getValidIntegerInput("Enter the cart line number to remove: ") - 1;
         if (index >= 0 && index < cart.size()) {
             cart.remove(index);
-            System.out.println(">> Item successfully removed.");
+            System.out.println(SUCCESS + " Item successfully removed.");
         } else {
             System.out.println(">> Invalid line number.");
         }
@@ -367,7 +401,7 @@ public class Main {
                 System.out.print(prompt);
                 return Integer.parseInt(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
-                System.out.println(">> [SYSTEM ERROR] Invalid input. Please type a number.");
+                System.out.println(ERROR + " Invalid input. Please type a number.");
             }
         }
     }
@@ -384,7 +418,7 @@ public class Main {
                 System.out.print(prompt);
                 return Double.parseDouble(scanner.nextLine().trim());
             } catch (NumberFormatException e) {
-                System.out.println(">> [SYSTEM ERROR] Invalid monetary value. Please type a number.");
+                System.out.println(ERROR + " Invalid monetary value. Please type a number.");
             }
         }
     }
@@ -402,7 +436,22 @@ public class Main {
             if (!value.isEmpty()) {
                 return value;
             }
-            System.out.println(">> [SYSTEM ERROR] This field cannot be blank.");
+            System.out.println(ERROR + " This field cannot be blank.");
+        }
+    }
+
+    private static String getValidMenuItemName(String prompt) {
+        while (true) {
+            String name = getNonEmptyInput(prompt);
+            if (name.length() > 100) {
+                System.out.println(ERROR + " Item name must be 100 characters or less.");
+                continue;
+            }
+            if (!name.matches("[a-zA-Z0-9\\s\\-()&,'.]*")) {
+                System.out.println(ERROR + " Item name contains invalid characters.");
+                continue;
+            }
+            return name;
         }
     }
 
@@ -418,7 +467,7 @@ public class Main {
             if (value > 0) {
                 return value;
             }
-            System.out.println(">> [SYSTEM ERROR] Value must be greater than zero.");
+            System.out.println(ERROR + " Value must be greater than zero.");
         }
     }
 
@@ -434,7 +483,7 @@ public class Main {
             if (value >= 0) {
                 return value;
             }
-            System.out.println(">> [SYSTEM ERROR] Value cannot be negative.");
+            System.out.println(ERROR + " Value cannot be negative.");
         }
     }
 
@@ -451,14 +500,14 @@ public class Main {
         }
 
         if (feeValue == null || feeValue.isBlank()) {
-            System.out.println(">> [WARN] POS_TAKEOUT_FEE is not configured. Using default take-out fee of ₱20.00.");
+            System.out.println(WARN + " POS_TAKEOUT_FEE is not configured. Using default take-out fee of " + CURRENCY_SYMBOL + "20.00.");
             return 20.00;
         }
 
         try {
             return Math.round(Double.parseDouble(feeValue.trim()) * 100.0) / 100.0;
         } catch (NumberFormatException e) {
-            System.out.println(">> [WARN] Invalid POS_TAKEOUT_FEE value. Using default take-out fee of ₱20.00.");
+            System.out.println(WARN + " Invalid POS_TAKEOUT_FEE value. Using default take-out fee of " + CURRENCY_SYMBOL + "20.00.");
             return 20.00;
         }
     }
@@ -471,37 +520,106 @@ public class Main {
      * @return true if admin credentials are valid, false otherwise
      */
     private static boolean authenticateAdmin() {
-        if (System.currentTimeMillis() < lockoutEndTime) {
-            long remainingSeconds = (lockoutEndTime - System.currentTimeMillis()) / 1000;
-            System.out.println("\n>> [SECURITY ALERT] System locked due to multiple failed attempts. Try again in " + remainingSeconds + " seconds.");
-            return false;
-        }
-
-        String configuredPin = System.getenv("POS_ADMIN_PIN");
-        if (configuredPin == null || configuredPin.isBlank()) {
-            configuredPin = System.getProperty("pos.admin.pin");
-        }
-        if (configuredPin == null || configuredPin.isBlank()) {
-            System.out.println("\n>> [CRITICAL] Admin PIN is not configured in the environment. Admin access is disabled for security.");
-            return false;
-        }
-
-        System.out.print("\n[SECURITY] Enter 4-digit Admin PIN: ");
-        String pin = scanner.nextLine().trim();
-
-        if (pin.equals(configuredPin)) {
-            failedPinAttempts = 0;
-            System.out.println(">> [SYSTEM] Access Granted.");
-            return true;
-        } else {
-            failedPinAttempts++;
-            System.out.println(">> [SECURITY ALERT] Invalid PIN.");
-
-            if (failedPinAttempts >= 3) {
-                System.out.println(">> [SECURITY ALERT] Maximum attempts reached. Admin console locked for 30 seconds.");
-                lockoutEndTime = System.currentTimeMillis() + 30000;
+        synchronized (LOCKOUT_LOCK) {
+            if (System.currentTimeMillis() < lockoutEndTime) {
+                long remainingSeconds = (lockoutEndTime - System.currentTimeMillis()) / 1000;
+                System.out.println("\n" + WARN + " System locked due to multiple failed attempts. Try again in " + remainingSeconds + " seconds.");
+                return false;
             }
-            return false;
+
+            String configuredPin = System.getenv("POS_ADMIN_PIN");
+            if (configuredPin == null || configuredPin.isBlank()) {
+                configuredPin = System.getProperty("pos.admin.pin");
+            }
+            if (configuredPin == null || configuredPin.isBlank()) {
+                System.out.println("\n" + ERROR + " Admin PIN is not configured in the environment. Admin access is disabled for security.");
+                return false;
+            }
+
+            if (!configuredPin.matches("\\d{4,6}")) {
+                System.out.println("\n" + ERROR + " Admin PIN must be 4-6 digits. Update POS_ADMIN_PIN or -Dpos.admin.pin.");
+                return false;
+            }
+
+            System.out.print("\n[SECURITY] Enter Admin PIN (4-6 digits): ");
+            String pin = scanner.nextLine().trim();
+
+            boolean success = pin.equals(configuredPin);
+            if (success) {
+                failedPinAttempts = 0;
+                System.out.println(SUCCESS + " Access Granted.");
+            } else {
+                failedPinAttempts++;
+                System.out.println(WARN + " Invalid PIN.");
+
+                if (failedPinAttempts >= 3) {
+                    System.out.println(WARN + " Maximum attempts reached. Admin console locked for 30 seconds.");
+                    lockoutEndTime = System.currentTimeMillis() + 30000;
+                }
+            }
+
+            logAdminAttempt(success);
+            return success;
+        }
+    }
+
+    private static void logAdminAttempt(boolean success) {
+        String details = "{\"success\":" + success + "}";
+        try {
+            DatabaseHelper.insertAudit("terminal", "ADMIN_PIN_ATTEMPT", "admin-access", details);
+        } catch (SQLException e) {
+            System.out.println(WARN + " Failed to audit admin access: " + e.getMessage());
+        }
+    }
+
+    private static String normalizeCategory(String category) {
+        if (category == null) return "";
+        String trimmed = category.trim();
+        if (trimmed.isEmpty()) return "";
+        String lower = trimmed.toLowerCase();
+
+        if (lower.equals("beverage") || lower.equals("beverages")) return "Beverages";
+        if (lower.equals("appetizer") || lower.equals("appetizers")) return "Appetizer";
+        if (lower.equals("dessert") || lower.equals("desserts")) return "Dessert";
+        if (lower.equals("soup") || lower.equals("soups")) return "Soup";
+        if (lower.equals("rice bowl") || lower.equals("ricebowl") || lower.equals("rice bowls")) return "Rice Bowl";
+        if (lower.equals("add-on") || lower.equals("add-ons") || lower.equals("addons")) return "Add-Ons";
+
+        return toTitleCase(trimmed);
+    }
+
+    private static String toTitleCase(String value) {
+        String[] parts = value.trim().split("\\s+");
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < parts.length; i++) {
+            if (parts[i].isEmpty()) continue;
+            String word = parts[i];
+            builder.append(Character.toUpperCase(word.charAt(0)));
+            if (word.length() > 1) {
+                builder.append(word.substring(1).toLowerCase());
+            }
+            if (i < parts.length - 1) {
+                builder.append(' ');
+            }
+        }
+        return builder.toString().trim();
+    }
+
+    private static BigDecimal calculateCartSubtotal(List<CartItem> cart) {
+        BigDecimal subtotal = BigDecimal.ZERO;
+        for (CartItem item : cart) {
+            subtotal = subtotal.add(item.getSubtotalDecimal());
+        }
+        return subtotal.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private static void validateStartupConfiguration() {
+        try {
+            DatabaseHelper.getConnection().close();
+            System.out.println(INFO + " Database connection verified.");
+        } catch (SQLException e) {
+            System.err.println(ERROR + " Database connection failed: " + e.getMessage());
+            System.exit(1);
         }
     }
 }

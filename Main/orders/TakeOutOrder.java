@@ -2,9 +2,9 @@ package orders;
 
 /**
  * Represents a take-out order with a configurable packaging fee.
- * Implements the OrderDAO interface for order type-specific behavior.
+ * Implements the FulfillmentType interface for order type-specific behavior.
  */
-public class TakeOutOrder implements OrderDAO {
+public class TakeOutOrder implements FulfillmentType {
 
     private double packagingFee;
 

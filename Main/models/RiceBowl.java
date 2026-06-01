@@ -38,7 +38,12 @@ public class RiceBowl extends MenuItem {
      * @param mainProtein the new protein ingredient
      */
     public void setMainProtein(String mainProtein) {
-        this.mainProtein = mainProtein;
+        String sanitized = (mainProtein != null) ? mainProtein.trim() : "";
+        if (sanitized.isEmpty()) {
+            System.out.println("Error: Protein type cannot be empty.");
+            return;
+        }
+        this.mainProtein = sanitized;
     }
 
     /**
