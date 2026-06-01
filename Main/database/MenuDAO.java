@@ -12,8 +12,8 @@ import java.util.List;
 public class MenuDAO {
 
     /**
-     * Fetches a single menu item by ID, converting the database record into a polymorphic MenuItem subclass.
-     * Filters to active items only. Returns null if item is not found.
+     * Fetches a single menu item by ID, converting the database record into a polymorphic MenuItem subclass
+     * via the MenuItemFactory. Filters to active items only. Returns null if item is not found.
      *
      * @param id the menu item ID
      * @return the MenuItem object (or a subclass based on category), or null if not found
@@ -32,36 +32,9 @@ public class MenuDAO {
                     double price = rs.getDouble("price");
                     int stock = rs.getInt("stock_quantity");
                     String category = rs.getString("category");
-
                     String specialAttr = rs.getString("special_attribute");
-                    if (specialAttr == null) specialAttr = "Standard";
 
-                    if (category.equalsIgnoreCase("Beverages")) {
-                        int volume = parseIntOrDefault(specialAttr.replace("ml", "").trim(), 500, "beverage volume");
-                        return new Beverage(fetchedId, name, price, stock, category, volume);
-
-                    } else if (category.equalsIgnoreCase("Appetizer")) {
-                        int pieces = parseIntOrDefault(specialAttr, 1, "appetizer pieces");
-                        return new Appetizer(fetchedId, name, price, stock, category, pieces);
-
-                    } else if (category.equalsIgnoreCase("Dessert")) {
-                        return new Dessert(fetchedId, name, price, stock, category, specialAttr);
-
-                    } else if (category.equalsIgnoreCase("Soup")) {
-                        boolean isSpicy = specialAttr.equalsIgnoreCase("Spicy");
-                        return new Soup(fetchedId, name, price, stock, category, isSpicy);
-
-                    } else if (category.equalsIgnoreCase("Rice Bowl")) {
-                        return new RiceBowl(fetchedId, name, price, stock, category, specialAttr);
-
-                    } else if (category.equalsIgnoreCase("Add-Ons") || category.equalsIgnoreCase("Add-On")) {
-                        boolean isCondiment = specialAttr.equalsIgnoreCase("Condiment");
-                        return new AddOn(fetchedId, name, price, stock, category, isCondiment);
-
-                    } else {
-                        System.out.println(">> [WARN] Unrecognized menu category '" + category + "' for item ID " + fetchedId + ". Loading as a generic menu item.");
-                        return new MenuItem(fetchedId, name, price, stock, category);
-                    }
+                    return MenuItemFactory.create(fetchedId, name, price, stock, category, specialAttr);
                 }
             }
         } catch (SQLException e) {
@@ -71,64 +44,12 @@ public class MenuDAO {
     }
 
     /**
-     * Executes a SELECT query on the menu_items table and displays the results in tabular format.
-     *
-     * @param sql the SQL query to execute (should be a SELECT statement)
-     * @param parameter optional parameter to bind to a prepared statement (for WHERE clauses)
+     * Displays all active menu items from the database in tabular format.
+     * Encapsulates the SQL query so the UI layer never constructs raw SQL.
      */
-    public static void executeSelectQuery(String sql, String parameter) {
-        try (Connection conn = DatabaseHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
-            if (parameter != null) {
-                pstmt.setString(1, parameter);
-            }
-
-            try (ResultSet rs = pstmt.executeQuery()) {
-                System.out.printf("%-5s %-25s %-10s %-10s %-15s\n", "ID", "Item Name", "Price", "Stock", "Category");
-                System.out.println("----------------------------------------------------------------------");
-
-                boolean foundItems = false;
-                while (rs.next()) {
-                    foundItems = true;
-                    System.out.printf("%-5d %-25s ₱%-9.2f %-10d %-15s\n",
-                            rs.getInt("id"),
-                            rs.getString("item_name"),
-                            rs.getDouble("price"),
-                            rs.getInt("stock_quantity"),
-                            rs.getString("category"));
-                }
-
-                if (!foundItems) {
-                    System.out.println("No items found.");
-                }
-            }
-
-        } catch (SQLException e) {
-            System.out.println("Database Error: Could not fetch the menu.");
-            System.out.println(e.getMessage());
-        }
-    }
-
-    /**
-     * Retrieves a list of all active menu item categories from the database.
-     * Returns an empty list if no categories are found.
-     *
-     * @return a list of category names
-     */
-    public static List<String> getActiveCategories() {
-        List<String> categories = new ArrayList<>();
-        String sql = "SELECT DISTINCT category FROM menu_items WHERE is_active = TRUE ORDER BY category";
-        try (Connection conn = DatabaseHelper.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                categories.add(rs.getString("category"));
-            }
-        } catch (SQLException e) {
-            System.out.println("Error loading categories: " + e.getMessage());
-        }
-        return categories;
+    public static void printAllActiveItems() {
+        String sql = "SELECT * FROM menu_items WHERE is_active = TRUE ORDER BY id ASC";
+        executeSelectQuery(sql, null);
     }
 
     /**
@@ -159,19 +80,64 @@ public class MenuDAO {
     }
 
     /**
-     * Safely parses a string to an integer with a fallback value if parsing fails.
+     * Retrieves a list of all active menu item categories from the database.
+     * Returns an empty list if no categories are found.
      *
-     * @param value the string value to parse
-     * @param fallback the default value if parsing fails
-     * @param context a description of what value is being parsed (for error logging)
-     * @return the parsed integer, or the fallback value if parsing fails
+     * @return a list of category names
      */
-    private static int parseIntOrDefault(String value, int fallback, String context) {
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (NumberFormatException e) {
-            System.out.println(">> [WARN] Could not parse " + context + " from '" + value + "'. Using " + fallback + ".");
-            return fallback;
+    public static List<String> getActiveCategories() {
+        List<String> categories = new ArrayList<>();
+        String sql = "SELECT DISTINCT category FROM menu_items WHERE is_active = TRUE ORDER BY category";
+        try (Connection conn = DatabaseHelper.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                categories.add(rs.getString("category"));
+            }
+        } catch (SQLException e) {
+            System.out.println("Error loading categories: " + e.getMessage());
+        }
+        return categories;
+    }
+
+    /**
+     * Internal method that executes a SELECT query on menu_items and prints results in tabular format.
+     * Not exposed to the UI layer — callers should use printAllActiveItems() or printItemsByCategory().
+     *
+     * @param sql       the SQL query to execute (should be a SELECT statement)
+     * @param parameter optional parameter to bind to a prepared statement (for WHERE clauses)
+     */
+    private static void executeSelectQuery(String sql, String parameter) {
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            if (parameter != null) {
+                pstmt.setString(1, parameter);
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                System.out.printf("%-5s %-25s %-10s %-10s %-15s%n", "ID", "Item Name", "Price", "Stock", "Category");
+                System.out.println("----------------------------------------------------------------------");
+
+                boolean foundItems = false;
+                while (rs.next()) {
+                    foundItems = true;
+                    System.out.printf("%-5d %-25s ₱%-9.2f %-10d %-15s%n",
+                            rs.getInt("id"),
+                            rs.getString("item_name"),
+                            rs.getDouble("price"),
+                            rs.getInt("stock_quantity"),
+                            rs.getString("category"));
+                }
+
+                if (!foundItems) {
+                    System.out.println("No items found.");
+                }
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Database Error: Could not fetch the menu.");
+            System.out.println(e.getMessage());
         }
     }
 }

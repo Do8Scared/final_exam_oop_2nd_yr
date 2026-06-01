@@ -57,6 +57,10 @@ public class CartItem {
      * @param quantity the new quantity
      */
     public void setQuantity(int quantity) {
+        if (quantity <= 0) {
+            System.out.println("Error: Cart item quantity must be greater than zero.");
+            return;
+        }
         this.quantity = quantity;
     }
 

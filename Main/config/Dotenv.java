@@ -138,6 +138,7 @@ public final class Dotenv {
         mappings.put("POS_DB_USER", "pos.db.user");
         mappings.put("POS_DB_PASSWORD", "pos.db.password");
         mappings.put("POS_ADMIN_PIN", "pos.admin.pin");
+        mappings.put("POS_TAKEOUT_FEE", "pos.takeout.fee");
 
         for (Map.Entry<String, String> e : mappings.entrySet()) {
             String envKey = e.getKey();

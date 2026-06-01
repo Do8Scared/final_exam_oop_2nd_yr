@@ -38,7 +38,11 @@ public class Dessert extends MenuItem {
      * @param sweetness the new sweetness profile
      */
     public void setSweetness(String sweetness) {
-        this.sweetness = sweetness;
+        if (sweetness == null || sweetness.trim().isEmpty()) {
+            System.out.println("Error: Sweetness profile cannot be empty.");
+            return;
+        }
+        this.sweetness = sweetness.trim();
     }
 
     /**

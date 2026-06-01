@@ -2,9 +2,13 @@ package Main;
 
 import models.MenuItem;
 import database.DatabaseHelper;
+import util.JsonUtil;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * Manages menu item creation and insertion into the Supabase database.
@@ -25,6 +29,7 @@ public class MenuManager {
     /**
      * Adds a menu item to the database with the specified special attribute and actor information.
      * Performs an atomic transaction with audit trail logging.
+     * Properly rolls back on any failure path.
      *
      * @param item the MenuItem to add
      * @param specialAttribute the special attribute value (e.g., volume, spice level, protein)
@@ -33,35 +38,37 @@ public class MenuManager {
     public static void addMenuItem(MenuItem item, String specialAttribute, String actor) {
         String sql = "INSERT INTO menu_items (item_name, price, stock_quantity, category, special_attribute) VALUES (?, ?, ?, ?, ?) RETURNING id";
 
-        try (Connection conn = DatabaseHelper.getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-
+        Connection conn = null;
+        try {
+            conn = DatabaseHelper.getConnection();
             conn.setAutoCommit(false);
 
-            pstmt.setString(1, item.getItemName());
-            pstmt.setDouble(2, item.getPrice());
-            pstmt.setInt(3, item.getStockQuantity());
-            pstmt.setString(4, item.getCategory());
-            pstmt.setString(5, specialAttribute);
-
             Integer createdId = null;
-            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    createdId = rs.getInt("id");
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setString(1, item.getItemName());
+                pstmt.setDouble(2, item.getPrice());
+                pstmt.setInt(3, item.getStockQuantity());
+                pstmt.setString(4, item.getCategory());
+                pstmt.setString(5, specialAttribute);
+
+                try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        createdId = rs.getInt("id");
+                    }
                 }
             }
 
             if (createdId != null) {
-                String details = String.format(
-                        "{\"id\":%d,\"name\":\"%s\",\"price\":%.2f,\"stock\":%d,\"category\":\"%s\",\"special_attribute\":\"%s\"}",
-                        createdId,
-                        escapeJson(item.getItemName()),
-                        item.getPrice(),
-                        item.getStockQuantity(),
-                        escapeJson(item.getCategory()),
-                        escapeJson(specialAttribute)
-                );
-                DatabaseHelper.insertAudit(conn, actor, "MENU_ITEM_CREATED", String.valueOf(createdId), details);
+                Map<String, Object> details = new LinkedHashMap<>();
+                details.put("id", createdId);
+                details.put("name", item.getItemName());
+                details.put("price", item.getPrice());
+                details.put("stock", item.getStockQuantity());
+                details.put("category", item.getCategory());
+                details.put("special_attribute", specialAttribute);
+
+                DatabaseHelper.insertAudit(conn, actor, "MENU_ITEM_CREATED",
+                        String.valueOf(createdId), JsonUtil.buildJsonObject(details));
 
                 conn.commit();
                 System.out.println("\n[SYSTEM] Success! " + item.getItemName() + " was added to the live database.");
@@ -71,22 +78,21 @@ public class MenuManager {
             }
 
         } catch (SQLException e) {
+            // Fix: always rollback on exception (was missing before)
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { /* rollback best-effort */ }
+            }
             System.out.println("\n[SYSTEM ERROR] Could not add the menu item to the database.");
             System.out.println("Error details: " + e.getMessage());
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    System.out.println("Error closing connection: " + e.getMessage());
+                }
+            }
         }
-    }
-
-    /**
-     * Escapes JSON special characters in a string for safe JSON construction.
-     *
-     * @param s the string to escape
-     * @return the escaped string safe for JSON insertion
-     */
-    private static String escapeJson(String s) {
-        if (s == null) return "";
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
     }
 }
