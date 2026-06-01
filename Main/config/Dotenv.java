@@ -67,8 +67,7 @@ public final class Dotenv {
      */
     private static Path findEnvFile(Path start) {
         Path dir = start;
-        Path root = start.getRoot();
-        while (dir != null && (root == null || !dir.equals(root))) {
+        for (int i = 0; i < 6 && dir != null; i++) {
             Path candidate = dir.resolve(".env");
             if (Files.isRegularFile(candidate)) {
                 return candidate;

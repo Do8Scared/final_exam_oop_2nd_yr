@@ -26,14 +26,8 @@ public class MenuItem {
     public MenuItem(int id, String itemName, double price, int stockQuantity, String category) {
         this.id = id;
         this.itemName = sanitizeText(itemName, "Unnamed Item");
-        if (price < 0) {
-            throw new IllegalArgumentException("Price cannot be negative.");
-        }
-        if (stockQuantity < 0) {
-            throw new IllegalArgumentException("Stock quantity cannot be negative.");
-        }
-        this.price = price;
-        this.stockQuantity = stockQuantity;
+        this.price = Math.max(0, price);
+        this.stockQuantity = Math.max(0, stockQuantity);
         this.category = sanitizeText(category, "Uncategorized");
     }
 
@@ -50,14 +44,8 @@ public class MenuItem {
     public MenuItem(String itemName, double price, int stockQuantity, String category) {
         this.id = 0;
         this.itemName = sanitizeText(itemName, "Unnamed Item");
-        if (price < 0) {
-            throw new IllegalArgumentException("Price cannot be negative.");
-        }
-        if (stockQuantity < 0) {
-            throw new IllegalArgumentException("Stock quantity cannot be negative.");
-        }
-        this.price = price;
-        this.stockQuantity = stockQuantity;
+        this.price = Math.max(0, price);
+        this.stockQuantity = Math.max(0, stockQuantity);
         this.category = sanitizeText(category, "Uncategorized");
     }
 

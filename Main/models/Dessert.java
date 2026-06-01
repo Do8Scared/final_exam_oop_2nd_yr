@@ -20,8 +20,7 @@ public class Dessert extends MenuItem {
      */
     public Dessert(int id, String itemName, double price, int stockQuantity, String category, String sweetness) {
         super(id, itemName, price, stockQuantity, category);
-        String sanitized = (sweetness != null) ? sweetness.trim() : "";
-        this.sweetness = sanitized.isEmpty() ? "Standard" : sanitized;
+        this.sweetness = sweetness;
     }
 
     /**
@@ -39,12 +38,7 @@ public class Dessert extends MenuItem {
      * @param sweetness the new sweetness profile
      */
     public void setSweetness(String sweetness) {
-        String sanitized = (sweetness != null) ? sweetness.trim() : "";
-        if (sanitized.isEmpty()) {
-            System.out.println("Error: Sweetness profile cannot be empty.");
-            return;
-        }
-        this.sweetness = sanitized;
+        this.sweetness = sweetness;
     }
 
     /**
