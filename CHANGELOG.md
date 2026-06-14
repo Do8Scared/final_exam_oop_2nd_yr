@@ -20,6 +20,11 @@ All notable changes made during the recent hardening/audit work are documented h
 ### Changed
 - Refactored `CustomerDashboardFrame` to mimic modern food delivery applications.
 - Sunset the old text-based `MerchantDashboardFrame` and replaced it with a modern `AdminDashboardFrame` featuring `CardLayout`.
+- Renamed the polymorphic order fulfillment interface from `orders.OrderDAO` to `orders.OrderType` to accurately reflect its role and prevent naming collision.
+- Renamed the database handler `database.OrderDAO` to `database.TransactionDAO` to better represent its role in executing ACID checkout transactions and generating receipts.
+
+### Fixed
+- Suppressed `java.lang.System::load` native access warnings from FlatLaf (when running on Java 22+) by configuring `.vscode/launch.json` and `.vscode/settings.json` with `--enable-native-access=ALL-UNNAMED`.
 
 ## 2026-05-27
 
@@ -60,7 +65,7 @@ All notable changes made during the recent hardening/audit work are documented h
   - `Main/Main/Main.java` calls `MenuManager.addMenuItem(newItem, "admin")`.
 
 - Checkout flow now audited
-  - `Main/database/OrderDAO.java`
+  - `Main/database/TransactionDAO.java`
     - Success path writes `ORDER_CHECKOUT` audit row inside the checkout transaction.
     - Failure path writes best-effort `ORDER_CHECKOUT_FAILED` audit row after rollback.
 
@@ -69,7 +74,7 @@ All notable changes made during the recent hardening/audit work are documented h
 
 ### Fixed
 - Checkout stock race/oversell prevention
-  - `Main/database/OrderDAO.java` uses `SELECT ... FOR UPDATE` to lock stock rows and re-check stock inside the transaction.
+  - `Main/database/TransactionDAO.java` uses `SELECT ... FOR UPDATE` to lock stock rows and re-check stock inside the transaction.
 
 ### Verification (manual/CLI)
 - Compile:
