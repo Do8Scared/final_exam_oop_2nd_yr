@@ -108,7 +108,7 @@ export default function App() {
             description: staticMatch.description || "",
             price: item.price,
             image: staticMatch.image || "",
-            category: item.category,
+            category: staticMatch.category || item.category,
             tag: staticMatch.tag
           };
         });
