@@ -50,7 +50,16 @@ This system was built strictly adhering to modern OOP design patterns. Here is h
 ---
 
 ## 🚀 Tech Stack
+
+### Backend
 * **Language:** Java 17+
-* **GUI Framework:** Java Swing + FlatMacDarkLaf
+* **Framework:** Spring Boot (REST API)
+* **GUI (Legacy):** Java Swing + FlatMacDarkLaf
 * **Database:** Supabase (PostgreSQL)
 * **Driver:** JDBC PostgreSQL 42.6.0
+
+### Frontend
+* **Framework:** React + Vite
+* **Language:** TypeScript
+* **Styling:** Tailwind CSS + Radix UI + Custom CSS
+* **Animations:** Motion (Framer Motion)
