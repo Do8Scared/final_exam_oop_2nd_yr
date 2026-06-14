@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "Main",
+            "request": "launch",
+            "mainClass": "Main.Main",
+            "projectName": "final_exam_oop_2nd_yr_a715e23"
+        },
+        {
+            "type": "java",
             "name": "Launch Garahe Ni Mateicla",
             "request": "launch",
             "mainClass": "Main.Main",
