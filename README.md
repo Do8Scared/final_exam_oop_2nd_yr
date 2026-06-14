@@ -24,12 +24,12 @@ We eliminated redundant code by creating a parent class and allowing specialized
 
 ### 3. Polymorphism (Dynamic Behavior)
 Our application can treat multiple different objects as if they are the same type, while each object dynamically responds in its own unique way.
-* **Where we used it (Data):** The `getSpecialDetails()` method. The parent `MenuItem` has an empty method, but every child class `@Override`s it. When the receipt prints, it loops through a generic list of items and calls this method. The system dynamically knows to print `[Volume: 500ml]` for drinks and `[Protein: Beef]` for rice bowls.
+* **Where we used it (Data):** The `getSpecialDetails()` method. The parent `MenuItem` has an empty method, but every child class `@Override`s it. When the `CustomerDashboardFrame` renders the frontend menu, it loops through a generic list of items and calls this method to generate dynamic sub-labels. The UI natively knows to display `[Preparation: Standard Non-Spicy]` for soups, `[Volume: 500ml]` for drinks, and `[Protein: Beef]` for rice bowls. This same polymorphism is reused by the checkout system when generating official receipts.
 * **Where we used it (Fulfillment):** The `OrderType` interface. `DeliveryOrder` and `PickUpOrder` both implement the exact same interface, but when the checkout engine asks them for their `getAdditionalFee()`, Delivery dynamically returns 50.00, while Pick-up returns 0.00.
 
 ### 4. Abstraction (Hiding Complexity)
 We hide complex implementation details (like raw SQL strings and database connections) behind simple, highly readable method calls so the main application loop remains clean.
-* **Where we used it:** The Data Access Objects (DAO). Our user interface (`Main.java` / `CustomerTerminal.java`) has no idea that PostgreSQL exists. When a customer adds an item to their cart, the UI simply calls `MenuDAO.fetchItemById()`. The DAO abstracts the complexity of `PreparedStatement`s, `ResultSet`s, and network error handling away from the front-end.
+* **Where we used it:** The Data Access Objects (DAO). Our user interfaces (`CustomerDashboardFrame.java` / `AdminDashboardFrame.java`) have no idea that PostgreSQL exists. When a customer adds an item to their cart and completes checkout, or when an admin fetches inventory, the UI simply calls methods like `MenuDAO.fetchItemById()` or `TransactionDAO.processCheckout()`. The DAO abstracts the complexity of `PreparedStatement`s, `ResultSet`s, transaction pooling, and network error handling away from the front-end.
 
 ---
 

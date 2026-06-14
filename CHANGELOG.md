@@ -14,6 +14,8 @@ All notable changes made during the recent hardening/audit work are documented h
 - Real-time search functionality hooked to `MenuDAO.getAllMenuItems(searchTerm, sortBy)` via `ILIKE`.
 - Dropdown sorting options (by Name, Price, Quantity) for both Customer and Admin Dashboards.
 - Live database queries displaying results in a dynamic GridLayout and JTable natively.
+- Integrated `FlatMacDarkLaf` (FlatLaf) for a modern, macOS-inspired system-wide Dark Mode.
+- Stripped hardcoded `Color` overrides from all GUI frames to allow native Look and Feel (LaF) rendering and rounded corners.
 
 ### Changed
 - Refactored `CustomerDashboardFrame` to mimic modern food delivery applications.

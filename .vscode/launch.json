@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Launch Garahe Ni Mateicla",
+            "request": "launch",
+            "mainClass": "Main.Main",
+            "projectName": "final_exam_oop_2nd_yr",
+            "vmArgs": "--enable-native-access=ALL-UNNAMED"
+        }
+    ]
+}
