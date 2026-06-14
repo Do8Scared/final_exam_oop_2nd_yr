@@ -11,7 +11,8 @@ import java.sql.Statement;
 
 /**
  * Database connection and audit logging utilities.
- * Manages PostgreSQL connections and transaction logging for the POS system.
+ * Manages PostgreSQL connections and transaction logging for the online ordering system.
+ * Connects to the Supabase database securely.
  */
 public class DatabaseHelper {
 

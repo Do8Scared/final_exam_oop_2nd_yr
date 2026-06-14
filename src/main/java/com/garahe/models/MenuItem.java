@@ -1,7 +1,7 @@
 package com.garahe.models;
 
 /**
- * Represents a menu item in the POS system.
+ * Represents a menu item in the ordering system.
  * Contains pricing, inventory, and category information.
  * Subclasses can override getSpecialDetails() for category-specific attributes.
  */
