@@ -11,11 +11,24 @@ import org.springframework.web.bind.annotation.*;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Controller class responsible for handling Order and Checkout API requests.
+ * 
+ * Part of the Controller layer in the MVC Architecture. This class acts as the middle-man
+ * between the React Frontend (View) and the Database layer (DAO). It processes HTTP requests
+ * related to the user's cart, calculates dependencies, and delegates the transaction to the DAO.
+ */
 @RestController
 @RequestMapping("/api/checkout")
 @CrossOrigin(origins = "*")
 public class OrderController {
 
+    /**
+     * Processes a new checkout request containing the user's cart and delivery details.
+     * 
+     * @param payload The JSON payload from the frontend containing cart items and customer info.
+     * @return ResponseEntity with the generated transactionId or an error message.
+     */
     @PostMapping
     public ResponseEntity<String> checkout(@RequestBody CheckoutPayload payload) {
         if (payload.getItems() == null || payload.getItems().isEmpty()) {
@@ -50,6 +63,12 @@ public class OrderController {
         }
     }
 
+    /**
+     * Retrieves the transaction history for a specific user.
+     * 
+     * @param email The email address of the logged-in user.
+     * @return ResponseEntity containing a JSON array of past transactions.
+     */
     @GetMapping("/history")
     public ResponseEntity<String> getHistory(@RequestParam("email") String email) {
         if (email == null || email.isEmpty()) {

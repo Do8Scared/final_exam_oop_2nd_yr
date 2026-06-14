@@ -7,6 +7,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * Controller class responsible for handling Authentication API requests.
+ * 
+ * Part of the Controller layer in the MVC Architecture. This class acts as the middle-man
+ * between the React Frontend (View) and the Database layer (DAO). It processes HTTP requests
+ * and maps them to secure database operations.
+ */
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
@@ -15,10 +22,18 @@ public class AuthController {
     private final UserDAO userDAO;
 
     public AuthController() {
-        // OOP Pillar: Polymorphism and Abstraction in action
+        // OOP Pillar: Polymorphism and Abstraction in action.
+        // We code to the interface (UserDAO), hiding the complex SQL implementation details
+        // provided by UserDAOImpl.
         this.userDAO = new UserDAOImpl();
     }
 
+    /**
+     * Registers a new user into the database.
+     * 
+     * @param user The User object containing name, email, and password.
+     * @return ResponseEntity with a success message or an error if the email already exists.
+     */
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
         if (user.getName() == null || user.getEmail() == null || user.getPassword() == null) {
@@ -32,6 +47,12 @@ public class AuthController {
         }
     }
 
+    /**
+     * Authenticates an existing user for login.
+     * 
+     * @param payload The login credentials containing email and password.
+     * @return ResponseEntity containing the User object (with password stripped for security) or an unauthorized error.
+     */
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginPayload payload) {
         User user = userDAO.authenticateUser(payload.getEmail(), payload.getPassword());
