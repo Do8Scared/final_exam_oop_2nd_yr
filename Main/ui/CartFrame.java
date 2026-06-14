@@ -148,9 +148,30 @@ public class CartFrame extends JFrame {
             return;
         }
 
+        java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+        java.io.PrintStream ps = new java.io.PrintStream(baos);
+        java.io.PrintStream old = System.out;
+        System.setOut(ps);
+
         boolean success = TransactionDAO.processCheckout(cart, orderTypeStr, paymentMethod, additionalFee);
+        
+        System.out.flush();
+        System.setOut(old);
+
         if (success) {
-            JOptionPane.showMessageDialog(this, "Order placed successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
+            String receiptText = baos.toString();
+            
+            JTextArea textArea = new JTextArea(receiptText);
+            textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+            textArea.setEditable(false);
+            textArea.setBackground(new Color(20, 20, 20));
+            textArea.setForeground(new Color(200, 200, 200));
+            
+            JScrollPane scrollPane = new JScrollPane(textArea);
+            scrollPane.setPreferredSize(new Dimension(350, 450));
+            
+            JOptionPane.showMessageDialog(this, scrollPane, "Official Receipt", JOptionPane.INFORMATION_MESSAGE);
+
             cart.clear();
             parentFrame.loadMenuData();
             parentFrame.setVisible(true);
