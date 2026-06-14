@@ -6,7 +6,7 @@ An enterprise-grade, object-oriented Graphical User Interface (GUI) application 
 
 ## 🚀 Quick Start Tutorial (How to Run)
 
-Welcome, Professor! Follow these steps to easily run and test the application on your machine:
+Follow these steps to easily run and test the application:
 
 ### 1. Running the Java Spring Boot Backend
 The backend serves the API, connects to the Supabase database, and handles all transactions.
@@ -33,8 +33,8 @@ The frontend is the visual website the customer interacts with.
 * **Menu Browsing:** Scroll through the beautiful UI to see our dynamic menu. Use the category filters (e.g., *Mains*, *Soups*) at the top to sort items.
 * **Authentication:** Click the "LOGIN" button at the top right. You can either log in with an existing account or register a new one to unlock features like Order History.
 * **Adding to Cart:** Click the `+` button on any food item to add it to your floating cart.
-* **Checkout:** Open the cart and click "Proceed to Checkout". If you are logged in, your details will auto-fill! Choose Delivery or Pick-up.
-* **Order History:** Once logged in, click "MY ORDERS" in the top navigation bar to view your past transactions dynamically loaded from the database.
+* **Checkout:** Open the cart and click "Proceed to Checkout". If a user is logged in, their details will auto-fill. Choose Delivery or Pick-up.
+* **Order History:** Once logged in, click "MY ORDERS" in the top navigation bar to view past transactions dynamically loaded from the database.
 
 ---
 
@@ -56,40 +56,40 @@ The frontend is the visual website the customer interacts with.
 ---
 
 ## 🏛️ System Architecture: MVC & DAO Patterns
-To ensure our code is clean, scalable, and easy to debug, we separated the system into distinct layers using the **Model-View-Controller (MVC)** and **Data Access Object (DAO)** patterns.
+To ensure the code is clean, scalable, and easy to debug, the system is separated into distinct layers using the **Model-View-Controller (MVC)** and **Data Access Object (DAO)** patterns.
 
-* **Models (`models/` package):** The blueprints for our data. Classes like `MenuItem`, `CartItem`, `Person`, and `User` represent the core entities of our business. They hold the data and enforce basic business rules (e.g., preventing negative prices).
+* **Models (`models/` package):** The blueprints for the data. Classes like `MenuItem`, `CartItem`, `Person`, and `User` represent the core entities of the business. They hold the data and enforce basic business rules (e.g., preventing negative prices).
 * **Controllers (`controllers/` package):** The middle-men (`AuthController` and `OrderController`). They receive HTTP requests from the React frontend, pass the data to the DAOs, and send JSON responses back.
 * **DAOs (`database/` package):** The Data Access Objects (`TransactionDAO`, `UserDAO`). They securely communicate with the PostgreSQL database, execute SQL queries (like inserting transactions or verifying passwords), and return the result.
 
 ---
 
-## 🏗️ Did We Use the 4 Pillars of OOP?
-**YES!** This system was built strictly adhering to modern Object-Oriented Programming (OOP) design patterns. Every feature uses these pillars to ensure the code is robust and secure. Here is exactly how the 4 Pillars are implemented within our architecture:
+## 🏗️ The 4 Pillars of OOP
+This system was built strictly adhering to modern Object-Oriented Programming (OOP) design patterns. Every feature uses these pillars to ensure the code is robust and secure. The following outlines how the 4 Pillars are implemented within the architecture:
 
 ### 1. Encapsulation (Data Hiding & Security)
 * **Concept:** Bundling data (variables) and methods into a single unit, and restricting direct access to sensitive data using `private` fields and public getters/setters.
-* **Where we used it:** 
-  * The `CartItem` and `MenuItem` classes. You cannot directly alter a cart item's internal price or identity from the outside; you must use the controlled `.setQuantity(int quantity)` method. This method contains validation logic (`if (quantity <= 0)`) to prevent negative numbers.
+* **Where it is used:** 
+  * The `CartItem` and `MenuItem` classes. A cart item's internal price or identity cannot be directly altered from the outside; the controlled `.setQuantity(int quantity)` method must be used. This method contains validation logic (`if (quantity <= 0)`) to prevent negative numbers.
   * The `User` class (Authentication). Sensitive fields like `password`, `email`, and `id` are kept strictly `private`. They can only be accessed or modified through explicit getters and setters, protecting customer data integrity from external interference.
 
 ### 2. Inheritance (Reusability & Hierarchy)
 * **Concept:** Creating new child classes based on existing parent classes to promote code reusability using the `extends` keyword.
-* **Where we used it:** 
-  * **Authentication System:** We created a base parent class called `Person.java` (containing universal traits like `id`, `name`, and `email`). Our `User.java` class inherits from `Person` via the `extends` keyword and introduces the additional `password` trait specifically for system users. This prevents us from duplicating name and email code!
-  * **Menu System:** `MenuItem.java` is a Parent class. We created specific Child classes like `Beverage.java`, `Soup.java`, and `RiceBowl.java` that `extend MenuItem`. This allows a `Beverage` to inherit all the pricing logic, but safely add its own unique property (e.g., `volume` in mL).
+* **Where it is used:** 
+  * **Authentication System:** A base parent class called `Person.java` was created (containing universal traits like `id`, `name`, and `email`). The `User.java` class inherits from `Person` via the `extends` keyword and introduces the additional `password` trait specifically for system users. This prevents duplicating name and email code.
+  * **Menu System:** `MenuItem.java` is a Parent class. Specific Child classes like `Beverage.java`, `Soup.java`, and `RiceBowl.java` were created to `extend MenuItem`. This allows a `Beverage` to inherit all the pricing logic, but safely add its own unique property (e.g., `volume` in mL).
 
 ### 3. Polymorphism (Dynamic Behavior)
 * **Concept:** The ability of different objects or methods to respond to the exact same call in their own unique way (Method Overriding and Interface implementation).
-* **Where we used it:** 
-  * **Database Implementation:** The `UserDAO` interface acts as a polymorphic contract. `UserDAOImpl` implements this interface dynamically. The `AuthController` only talks to the `UserDAO` interface, allowing Java to dynamically execute the implementation. If we later switch to Firebase Auth, we can create a `FirebaseUserDAOImpl` that behaves entirely differently, without breaking the application!
+* **Where it is used:** 
+  * **Database Implementation:** The `UserDAO` interface acts as a polymorphic contract. `UserDAOImpl` implements this interface dynamically. The `AuthController` only talks to the `UserDAO` interface, allowing Java to dynamically execute the implementation. If the system later switches to Firebase Auth, a `FirebaseUserDAOImpl` can be created that behaves entirely differently, without breaking the application.
   * **The Order Interface:** The `OrderType` interface. Both `DeliveryOrder` and `PickUpOrder` implement this interface. When the checkout engine asks for `.getAdditionalFee()`, Delivery dynamically calculates and returns `50.00`, while Pick-up returns `0.00`.
   * **Dynamic Menu Data:** The `getSpecialDetails()` method. The parent `MenuItem` has an empty method, but every child class `@Override`s it. Soups return `[Preparation: Non-Spicy]`, drinks return `[Volume: 500ml]`.
 
 ### 4. Abstraction (Hiding Complexity)
 * **Concept:** Hiding complex background implementation details and showing only the essential features to the user (or other parts of the code).
-* **Where we used it:** 
-  * **Auth DAO:** The `AuthController` securely registers and logs in users by calling `userDAO.authenticateUser()`. The Controller doesn't write or see any SQL queries; it relies entirely on the Abstraction provided by the `UserDAO` interface. The messy SQL is hidden away.
+* **Where it is used:** 
+  * **Auth DAO:** The `AuthController` securely registers and logs in users by calling `userDAO.authenticateUser()`. The Controller does not write or see any SQL queries; it relies entirely on the Abstraction provided by the `UserDAO` interface. The SQL implementation is strictly hidden away.
   * **Transaction DAO:** When a customer completes checkout, the system calls a clean, readable method: `TransactionDAO.processCheckout()`. The DAO completely hides the complex mechanics of `PreparedStatement` mapping, looping over arrays, committing ACID transactions, and rollback errors away from the rest of the application.
 
 ---
