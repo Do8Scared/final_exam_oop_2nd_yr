@@ -2,6 +2,12 @@
 
 An enterprise-grade, object-oriented Graphical User Interface (GUI) application simulating a modern food delivery and ordering platform (e.g., GrabFood, Foodpanda). Built purely with Java Swing, it features live cloud synchronization via Supabase (PostgreSQL), ACID database transactions, and a robust cart management system.
 
+### Key Features
+* **Authentication**: Secure user login and registration system.
+* **Transaction History**: View past orders dynamically pulled from the cloud database.
+* **Detailed Receipts**: Terminal and UI receipts display comprehensive customer and delivery details.
+* **Live Menu System**: A fully synchronized menu displaying dynamic categories and options.
+
 ## 👨‍💻 Development Team
 * **Mirexelle** (Lead Developer / Architect)
 * **Matthew** (Core Logic)

@@ -6,6 +6,7 @@ import { MenuItem } from "./components/MenuItem";
 import { CheckoutModal } from "./components/CheckoutModal";
 import { LoginModal } from "./components/LoginModal";
 import { ReceiptModal, type OrderReceipt } from "./components/ReceiptModal";
+import { TransactionHistoryModal } from "./components/TransactionHistoryModal";
 
 // Original images
 import jpancake from "../imports/Japanese_Pancake.jpg";
@@ -38,6 +39,11 @@ import oyakodon from "../imports/Oyakodon.jpg";
 import mochi from "../imports/Mochi.jpg";
 import misoSoup from "../imports/misosoup.jpg";
 import edamame from "../imports/Pan-Fried_Edamame.jpg";
+// Missing items batch
+import kyuriTsukemono from "../imports/kyuri tsukemono.jpg";
+import ramyon from "../imports/ramyon.jpg";
+import spicyChiliRayu from "../imports/spicy chili rayu.jpg";
+import yakitoriChicken from "../imports/yakitorichicken.jpg";
 
 type MenuEntry = {
   id: number;
@@ -78,6 +84,10 @@ const STATIC_MENU: MenuEntry[] = [
   { id: 26, name: "Tendon", description: "Crispy tempura shrimp and vegetables over steamed rice with sweet tsuyu.", price: 295, image: tendon as string, category: "Mains", tag: "New" },
   { id: 27, name: "Yuzu Tea", description: "Warm honey-sweetened yuzu citrus tea — fragrant, soothing, and refreshing.", price: 110, image: yuzuTea as string, category: "Drinks" },
   { id: 28, name: "Yuzu Sparkler", description: "Chilled sparkling yuzu lemonade with a citrus-forward fizz.", price: 125, image: yuzuSparkler as string, category: "Drinks", tag: "New" },
+  { id: 29, name: "Kyuri Tsukemono", description: "Lightly pickled Japanese cucumbers with a refreshing crunch.", price: 120, image: kyuriTsukemono as string, category: "Sides" },
+  { id: 30, name: "Chicken Yakitori", description: "Grilled chicken skewers glazed with sweet and savory tare sauce.", price: 190, image: yakitoriChicken as string, category: "Sides", tag: "Popular" },
+  { id: 31, name: "Spicy Chili Rayu", description: "House-made Japanese chili oil with garlic and sesame.", price: 25, image: spicyChiliRayu as string, category: "Add-ons" },
+  { id: 32, name: "Ramyon", description: "Spicy Korean-style noodle soup packed with flavor and warmth.", price: 100, image: ramyon as string, category: "Soups", tag: "New" },
 ];
 
 const CATEGORIES = ["All", "Mains", "Soups", "Sides", "Add-ons", "Desserts", "Drinks"];
@@ -121,6 +131,7 @@ export default function App() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [receiptOpen, setReceiptOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState<OrderReceipt | null>(null);
   const [user, setUser] = useState<{ name: string; email: string } | null>(null);
 
@@ -180,6 +191,9 @@ export default function App() {
                 <User size={14} style={{ color: "#c8932a" }} />
                 <span style={{ color: "#f0ede8", fontFamily: "'Oswald', sans-serif", fontSize: "0.85rem", letterSpacing: "0.04em" }}>{user.name}</span>
               </div>
+              <button onClick={() => setHistoryOpen(true)} className="flex items-center gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-secondary" style={{ color: "#8a8070", fontSize: "0.85rem", fontFamily: "'Oswald', sans-serif" }}>
+                MY ORDERS
+              </button>
               <button onClick={() => setUser(null)} className="p-2 rounded-lg transition-colors hover:bg-secondary" style={{ color: "#8a8070" }}>
                 <LogOut size={16} />
               </button>
@@ -370,6 +384,16 @@ export default function App() {
           <LoginModal
             onClose={() => setLoginOpen(false)}
             onLogin={(u) => { setUser(u); setLoginOpen(false); }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* History Modal */}
+      <AnimatePresence>
+        {historyOpen && user && (
+          <TransactionHistoryModal
+            user={user}
+            onClose={() => setHistoryOpen(false)}
           />
         )}
       </AnimatePresence>

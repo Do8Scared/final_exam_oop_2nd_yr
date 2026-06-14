@@ -3,6 +3,14 @@
 
 # Build and IDE artifacts
 out/
+bin/
+target/
 *.class
+*.iml
 .idea/
+.vscode/
 
+# Node.js / React build artifacts
+node_modules/
+dist/
+.DS_Store

@@ -47,4 +47,27 @@ public class UserDAOImpl implements UserDAO {
         }
         return null;
     }
+
+    @Override
+    public User getUserByEmail(String email) {
+        String sql = "SELECT id, name, email, password FROM users WHERE email = ?";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, email);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return new User(
+                        rs.getInt("id"),
+                        rs.getString("name"),
+                        rs.getString("email"),
+                        rs.getString("password")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Database Error fetching user by email: " + e.getMessage());
+        }
+        return null;
+    }
 }

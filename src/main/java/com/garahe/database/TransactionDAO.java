@@ -1,11 +1,13 @@
 package com.garahe.database;
 
 import com.garahe.models.CartItem;
+import com.garahe.models.User;
 import com.garahe.util.JsonUtil;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,6 +21,7 @@ import java.util.UUID;
  * the orders.OrderType interface and to better represent its purpose.
  */
 public class TransactionDAO {
+    private static final UserDAO userDAO = new UserDAOImpl();
 
     /**
      * Processes a customer checkout transaction with ACID guarantees.
@@ -32,14 +35,27 @@ public class TransactionDAO {
      * @param paymentMethod  the payment method (Cash, GCash, Maya)
      * @param amountTendered the cash amount provided by the customer (for Cash
      *                       payments)
-     * @param packagingFee   the packaging fee to add to the total (0 for Dine-In)
+     * @param additionalFee  the additional fee (e.g., delivery fee)
+     * @param email          the email of the logged-in user
+     * @param customerName   the name of the customer
+     * @param contactNumber  the contact number
+     * @param deliverTo      the delivery address
+     * @param notes          any additional notes
      * @return the transaction ID if successful, null otherwise
      */
     public static String processCheckout(List<CartItem> cart, String orderType, String paymentMethod,
-            double additionalFee) {
+            double additionalFee, String email, String customerName, String contactNumber, String deliverTo, String notes) {
         if (cart == null || cart.isEmpty()) {
             System.out.println("Transaction Failed: Cart is empty.");
             return null;
+        }
+
+        Integer userId = null;
+        if (email != null && !email.isEmpty()) {
+            User u = userDAO.getUserByEmail(email);
+            if (u != null) {
+                userId = u.getId();
+            }
         }
 
         String txnId = "TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase() + "-"
@@ -54,7 +70,7 @@ public class TransactionDAO {
         double amountTendered = grandTotal;
         double changeDue = 0.00;
 
-        String insertTxnSql = "INSERT INTO transactions (transaction_id, order_type, payment_method, total_amount, amount_tendered, change_due) VALUES (?, ?, ?, ?, ?, ?)";
+        String insertTxnSql = "INSERT INTO transactions (transaction_id, order_type, payment_method, total_amount, amount_tendered, change_due, user_id, customer_name, contact_number, deliver_to, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         String insertItemsSql = "INSERT INTO transaction_items (transaction_id, menu_item_id, quantity, subtotal) VALUES (?, ?, ?, ?)";
         String updateStockSql = "UPDATE menu_items SET stock_quantity = stock_quantity - ? WHERE id = ?";
         String lockStockSql = "SELECT stock_quantity FROM menu_items WHERE id = ? AND is_active = TRUE FOR UPDATE";
@@ -71,6 +87,11 @@ public class TransactionDAO {
                 pstmtTxn.setDouble(4, grandTotal);
                 pstmtTxn.setDouble(5, amountTendered);
                 pstmtTxn.setDouble(6, changeDue);
+                if (userId != null) pstmtTxn.setInt(7, userId); else pstmtTxn.setNull(7, Types.INTEGER);
+                pstmtTxn.setString(8, customerName);
+                pstmtTxn.setString(9, contactNumber);
+                pstmtTxn.setString(10, deliverTo);
+                pstmtTxn.setString(11, notes);
                 pstmtTxn.executeUpdate();
             }
 
@@ -150,7 +171,7 @@ public class TransactionDAO {
             conn.commit();
 
             printUnifiedReceipt(txnId, cart, subtotal, additionalFee, grandTotal, paymentMethod, amountTendered,
-                    changeDue);
+                    changeDue, customerName, contactNumber, deliverTo, notes);
             return txnId;
 
         } catch (SQLException e) {
@@ -190,9 +211,14 @@ public class TransactionDAO {
      * @param payMethod  the payment method used
      * @param tendered   the cash amount tendered (for Cash payments)
      * @param change     the change amount due (for Cash payments)
+     * @param customerName  the name of the customer
+     * @param contactNumber the contact number
+     * @param deliverTo     the delivery address
+     * @param notes         any additional notes
      */
     private static void printUnifiedReceipt(String txnId, List<CartItem> cart, double subtotal, double additionalFee,
-            double grandTotal, String payMethod, double tendered, double change) {
+            double grandTotal, String payMethod, double tendered, double change,
+            String customerName, String contactNumber, String deliverTo, String notes) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         System.out.println("\n========================================");
@@ -201,6 +227,10 @@ public class TransactionDAO {
         System.out.println("========================================");
         System.out.println("ID  : " + txnId);
         System.out.println("DATE: " + dtf.format(LocalDateTime.now()));
+        if (customerName != null && !customerName.isEmpty()) System.out.println("Customer: " + customerName);
+        if (contactNumber != null && !contactNumber.isEmpty()) System.out.println("Contact : " + contactNumber);
+        if (deliverTo != null && !deliverTo.isEmpty()) System.out.println("Deliver To: " + deliverTo);
+        if (notes != null && !notes.isEmpty()) System.out.println("Notes   : " + notes);
         System.out.println("----------------------------------------");
 
         for (CartItem c : cart) {
@@ -253,5 +283,57 @@ public class TransactionDAO {
             System.out.println("Error fetching transaction history: " + e.getMessage());
         }
         return model;
+    }
+
+    /**
+     * Retrieves all transactions for a specific user based on their email.
+     */
+    public static String getUserTransactionsJson(String email) {
+        Integer userId = null;
+        if (email != null && !email.isEmpty()) {
+            User u = userDAO.getUserByEmail(email);
+            if (u != null) {
+                userId = u.getId();
+            }
+        }
+
+        if (userId == null) {
+            return "[]";
+        }
+
+        String sql = "SELECT t.transaction_id, t.created_at, t.order_type, t.payment_method, t.total_amount, " +
+                     "t.customer_name, t.deliver_to " +
+                     "FROM transactions t " +
+                     "WHERE t.user_id = ? " +
+                     "ORDER BY t.created_at DESC";
+
+        StringBuilder json = new StringBuilder("[");
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             
+            pstmt.setInt(1, userId);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                boolean first = true;
+                while (rs.next()) {
+                    if (!first) json.append(",");
+                    
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("transactionId", rs.getString("transaction_id"));
+                    map.put("date", rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toString() : "");
+                    map.put("orderType", rs.getString("order_type"));
+                    map.put("paymentMethod", rs.getString("payment_method"));
+                    map.put("totalAmount", rs.getDouble("total_amount"));
+                    map.put("customerName", rs.getString("customer_name"));
+                    map.put("deliverTo", rs.getString("deliver_to"));
+
+                    json.append(JsonUtil.buildJsonObject(map));
+                    first = false;
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error fetching user transactions: " + e.getMessage());
+        }
+        json.append("]");
+        return json.toString();
     }
 }

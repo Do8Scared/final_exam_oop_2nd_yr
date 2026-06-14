@@ -57,6 +57,11 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
         orderType: "Delivery",
         paymentMethod: form.paymentMethod === "cash" ? "Cash" : form.paymentMethod === "gcash" ? "GCash" : "Card",
         additionalFee: DELIVERY_FEE,
+        email: user?.email || "",
+        customerName: form.name,
+        contactNumber: form.phone,
+        deliverTo: form.address,
+        notes: form.notes,
         items: items.map(i => ({
           menuItemId: i.id,
           quantity: i.qty

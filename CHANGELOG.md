@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - **Authentication System**: Integrated Supabase `public.users` table.
 - **REST API Endpoints**: Added `AuthController` providing `/api/auth/register` and `/api/auth/login`.
 - **User Models**: Added `Person.java` and `User.java` to enforce Object-Oriented Principles (Inheritance and Encapsulation).
+- **Transaction History**: Created a new `TransactionHistoryModal` for users to view past orders. Added `GET /api/checkout/history` endpoint in the Java backend.
+- **Detailed Receipts**: Altered the Supabase `transactions` table to capture `user_id`, `customer_name`, `contact_number`, `deliver_to`, and `notes`. The checkout payload and terminal receipt now handle these additional details.
+- **New Menu Items**: Integrated 4 new menu items and their uploaded images (`Kyuri Tsukemono`, `Chicken Yakitori`, `Spicy Chili Rayu`, `Ramyon`) into the React frontend.
 - **User Database Access**: Created `UserDAO` interface and `UserDAOImpl` (Abstraction and Polymorphism).
 
 ### Changed
