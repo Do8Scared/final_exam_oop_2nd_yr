@@ -7,6 +7,11 @@ import java.awt.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 
+/**
+ * The initial landing portal of the application.
+ * Allows users to route into the system as either a Customer (open access)
+ * or an Admin (PIN protected with brute-force prevention).
+ */
 public class RoleSelectionFrame extends JFrame {
     
     // Static lockout variables to match AuthService logic
@@ -15,6 +20,10 @@ public class RoleSelectionFrame extends JFrame {
     private static final int MAX_ATTEMPTS = 3;
     private static final long LOCKOUT_DURATION_MS = 30000;
 
+    /**
+     * Constructs the portal window.
+     * Initializes the environment variables required for admin authentication.
+     */
     public RoleSelectionFrame() {
         Dotenv.loadIfPresent();
         setTitle("Garahe Ni Mateicla - Portal");
@@ -49,6 +58,13 @@ public class RoleSelectionFrame extends JFrame {
         add(buttonPanel, BorderLayout.CENTER);
     }
 
+    /**
+     * Handles the secure authentication flow for the Admin Dashboard.
+     * Prevents brute-force attacks via a temporary lockout mechanism and validates
+     * the entered PIN against the system's securely configured environment variables.
+     *
+     * @return true if the PIN is correct, false if incorrect or locked out
+     */
     private boolean authenticateAdmin() {
         if (System.currentTimeMillis() < lockoutEndTime) {
             long remaining = (lockoutEndTime - System.currentTimeMillis()) / 1000;
@@ -93,6 +109,13 @@ public class RoleSelectionFrame extends JFrame {
         return false;
     }
 
+    /**
+     * Compares two strings securely in constant time to prevent timing attacks.
+     *
+     * @param a the first string
+     * @param b the second string
+     * @return true if the strings are identical
+     */
     private boolean constantTimeEquals(String a, String b) {
         if (a == null || b == null) return a == b;
         byte[] aBytes = a.getBytes(StandardCharsets.UTF_8);

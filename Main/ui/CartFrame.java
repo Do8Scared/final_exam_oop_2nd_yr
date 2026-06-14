@@ -11,6 +11,11 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
 
+/**
+ * Graphical User Interface representing the customer's shopping cart.
+ * Displays the current selected items, calculates subtotals and grand totals,
+ * and handles the checkout process via communication with TransactionDAO.
+ */
 public class CartFrame extends JFrame {
     private JTable cartTable;
     private DefaultTableModel tableModel;
@@ -18,6 +23,13 @@ public class CartFrame extends JFrame {
     private CustomerDashboardFrame parentFrame;
     private JLabel totalLabel;
 
+    /**
+     * Constructs the CartFrame, rendering a table of currently selected items
+     * and initializing the checkout action panel.
+     *
+     * @param cart the in-memory list of CartItems
+     * @param parentFrame the calling dashboard frame (used for returning back to the menu)
+     */
     public CartFrame(List<CartItem> cart, CustomerDashboardFrame parentFrame) {
         this.cart = cart;
         this.parentFrame = parentFrame;
@@ -94,6 +106,10 @@ public class CartFrame extends JFrame {
         loadCartData();
     }
 
+    /**
+     * Re-populates the JTable with the latest data from the in-memory cart list.
+     * Also triggers a recalculation of the cart subtotal.
+     */
     private void loadCartData() {
         tableModel.setRowCount(0);
         for (CartItem item : cart) {
@@ -107,6 +123,10 @@ public class CartFrame extends JFrame {
         updateTotal();
     }
 
+    /**
+     * Iterates through the cart items, calculating the combined subtotal,
+     * and updates the totalLabel display on the UI.
+     */
     private void updateTotal() {
         double subtotal = 0;
         for (CartItem item : cart) {
@@ -115,6 +135,13 @@ public class CartFrame extends JFrame {
         totalLabel.setText("Subtotal: PHP " + String.format("%.2f", subtotal));
     }
 
+    /**
+     * Handles the checkout sequence. Validates the cart, delegates transaction processing
+     * to the DAO layer, and displays the generated official receipt via a dialog.
+     *
+     * @param orderTypeStr the selected fulfillment method (Pick-Up, Delivery)
+     * @param paymentMethod the selected payment method (GCash, Maya, COD)
+     */
     private void handleCheckout(String orderTypeStr, String paymentMethod) {
         if (cart.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Cart is empty!", "Error", JOptionPane.ERROR_MESSAGE);

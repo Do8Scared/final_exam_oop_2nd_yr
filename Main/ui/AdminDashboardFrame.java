@@ -14,6 +14,11 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 import java.awt.*;
 
+/**
+ * The administrative Graphical User Interface for managing the system.
+ * Utilizes a CardLayout to switch between different management views:
+ * Inventory Management, Transaction History, and System Audits.
+ */
 public class AdminDashboardFrame extends JFrame {
     private JPanel mainPanel;
     private CardLayout cardLayout;
@@ -22,6 +27,11 @@ public class AdminDashboardFrame extends JFrame {
     private JTable transactionTable;
     private JTable auditTable;
 
+    /**
+     * Constructs the AdminDashboardFrame.
+     * Initializes the sidebar navigation and sets up the CardLayout
+     * containing the Inventory, Transactions, and Audits views.
+     */
     public AdminDashboardFrame() {
         setTitle("Admin Dashboard - Garahe Ni Mateicla");
         setSize(1000, 700);
@@ -92,7 +102,13 @@ public class AdminDashboardFrame extends JFrame {
     private JTextField adminSearchField;
     private JComboBox<String> adminSortCombo;
 
-    // --- VIEW 1: INVENTORY ---
+    /**
+     * Constructs the Inventory Management view.
+     * Contains controls for adding and deleting items, as well as searching
+     * and sorting the current database inventory.
+     *
+     * @return a JPanel representing the Inventory view
+     */
     private JPanel createInventoryPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -165,6 +181,10 @@ public class AdminDashboardFrame extends JFrame {
         return panel;
     }
 
+    /**
+     * Fetches the latest inventory data from the database (applying current search
+     * and sort filters) and updates the inventory JTable model.
+     */
     private void loadInventoryData() {
         String searchTerm = adminSearchField != null ? adminSearchField.getText() : "";
         String sortBy = adminSortCombo != null ? (String) adminSortCombo.getSelectedItem() : "Sort by ID";
@@ -174,6 +194,11 @@ public class AdminDashboardFrame extends JFrame {
         }
     }
 
+    /**
+     * Displays a modal dialog prompting the admin to input details for a new menu item.
+     * Validates input (ensuring price/stock are numbers) and delegates insertion
+     * to the MenuManager.
+     */
     private void showAddItemDialog() {
         JDialog dialog = new JDialog(this, "Add New Item", true);
         dialog.setSize(400, 300);
@@ -226,6 +251,10 @@ public class AdminDashboardFrame extends JFrame {
         dialog.setVisible(true);
     }
 
+    /**
+     * Handles the deletion of the currently selected menu item in the inventory table.
+     * Performs a soft-delete (setting is_active = FALSE) via the MenuDAO.
+     */
     private void deleteSelectedItem() {
         int row = inventoryTable.getSelectedRow();
         if (row == -1) {
@@ -244,7 +273,12 @@ public class AdminDashboardFrame extends JFrame {
         }
     }
 
-    // --- VIEW 2: TRANSACTIONS ---
+    /**
+     * Constructs the Transaction History view.
+     * Displays a read-only log of all successful checkouts and receipts.
+     *
+     * @return a JPanel representing the Transactions view
+     */
     private JPanel createTransactionPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -257,12 +291,22 @@ public class AdminDashboardFrame extends JFrame {
         return panel;
     }
 
+    /**
+     * Fetches the latest transaction records from the database and updates
+     * the transaction JTable model.
+     */
     private void loadTransactionData() {
         DefaultTableModel model = TransactionDAO.getTransactionHistoryTableModel();
         transactionTable.setModel(model);
     }
 
-    // --- VIEW 3: AUDITS ---
+    /**
+     * Constructs the System Audits view.
+     * Displays immutable security and lifecycle events recorded by the system.
+     * Includes a critical action button to clear all logs.
+     *
+     * @return a JPanel representing the Audits view
+     */
     private JPanel createAuditPanel() {
         JPanel panel = new JPanel(new BorderLayout());
 
@@ -302,6 +346,10 @@ public class AdminDashboardFrame extends JFrame {
         return panel;
     }
 
+    /**
+     * Fetches the latest audit logs from the database and updates
+     * the audit JTable model.
+     */
     private void loadAuditData() {
         DefaultTableModel model = AuditTrail.getAuditLogsTableModel();
         auditTable.setModel(model);

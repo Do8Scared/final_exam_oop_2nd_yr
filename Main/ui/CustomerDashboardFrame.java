@@ -14,6 +14,11 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * The primary Graphical User Interface for customers.
+ * Displays the live digital menu, allows filtering/searching, 
+ * and provides functionality to add items to the cart.
+ */
 public class CustomerDashboardFrame extends JFrame {
     private List<CartItem> cart;
     private JPanel menuGridPanel;
@@ -22,10 +27,20 @@ public class CustomerDashboardFrame extends JFrame {
     private JTextField searchField;
     private JComboBox<String> sortCombo;
 
+    /**
+     * Constructs a new CustomerDashboardFrame with an empty cart.
+     * Used when the customer first logs in.
+     */
     public CustomerDashboardFrame() {
         this(new ArrayList<>());
     }
 
+    /**
+     * Constructs a new CustomerDashboardFrame, retaining an existing cart.
+     * Used when the customer navigates back from the CartFrame to continue shopping.
+     *
+     * @param cart the existing list of CartItems
+     */
     public CustomerDashboardFrame(List<CartItem> cart) {
         this.cart = cart;
         setTitle("Garahe Ni Mateicla - Food Delivery | LAF: " + UIManager.getLookAndFeel().getName());
@@ -156,6 +171,11 @@ public class CustomerDashboardFrame extends JFrame {
         return btn;
     }
 
+    /**
+     * Queries the database for active menu items based on the current
+     * category filter, search text, and sorting preference.
+     * Rebuilds the visual grid of item cards dynamically.
+     */
     public void loadMenuData() {
         menuGridPanel.removeAll();
         viewCartBtn.setText("🛒 View Cart (" + cart.size() + ")");
@@ -210,6 +230,13 @@ public class CustomerDashboardFrame extends JFrame {
         menuGridPanel.repaint();
     }
 
+    /**
+     * Attempts to load and scale an image for a menu item from the local filesystem.
+     * Includes fallback matching for spaces, casing, and known file name typos.
+     *
+     * @param itemName the exact name of the menu item from the database
+     * @return a scaled ImageIcon if found, or null if no matching image exists
+     */
     private ImageIcon loadImage(String itemName) {
         String baseDir = "Main/assets/";
         if (!new java.io.File(baseDir).exists()) {
@@ -255,6 +282,14 @@ public class CustomerDashboardFrame extends JFrame {
         return null;
     }
 
+    /**
+     * Generates a reusable UI component (JPanel) representing a single menu item.
+     * Includes the item's image, name, price, polymorphic special details, 
+     * and an interactive "Add to Cart" button that respects current database stock.
+     *
+     * @param item the dynamically fetched MenuItem (or its subclasses)
+     * @return a structured JPanel card
+     */
     private JPanel createItemCard(MenuItem item) {
         int id = item.getId();
         String name = item.getItemName();
@@ -316,6 +351,14 @@ public class CustomerDashboardFrame extends JFrame {
         return card;
     }
 
+    /**
+     * Handles the interaction of adding a specific item to the shopping cart.
+     * Validates the requested quantity against the live cloud database stock
+     * to prevent overselling before the item is even added to the local cart.
+     *
+     * @param itemId the database ID of the item
+     * @param itemName the display name of the item
+     */
     private void handleAddToCart(int itemId, String itemName) {
         String qtyStr = JOptionPane.showInputDialog(this, "Enter quantity for " + itemName + ":", "1");
         if (qtyStr == null || qtyStr.trim().isEmpty()) return;
