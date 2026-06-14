@@ -1,7 +1,7 @@
 package orders;
 
 /**
- * Interface for order fulfillment types (e.g., Dine-In, Take-Out).
+ * Interface for order fulfillment types (e.g., Delivery, Pick-Up).
  * Defines the contract for order-type-specific fees and behaviors.
  *
  * Renamed from OrderDAO to OrderType to avoid naming collision with
@@ -11,10 +11,10 @@ package orders;
 public interface OrderType {
 
     /**
-     * Returns the packaging or fulfillment fee associated with this order type.
+     * Returns the additional fee associated with this order type.
      *
-     * @return the packaging fee amount
+     * @return the additional fee amount
      */
-    double getPackagingFee();
+    double getAdditionalFee();
 
 }

@@ -9,29 +9,29 @@ import java.util.List;
 import java.util.Scanner;
 
 /**
- * Console-based POS terminal user interface.
- * Contains all menu display, user interaction loops, and dashboard rendering.
+ * Console-based Customer terminal user interface.
+ * Contains all menu display, user interaction loops, and cart rendering.
  *
  * This class is the only class that directly interacts with the console (System.out/in).
  * To transition to a GUI, replace this class with a GUI implementation that calls
  * the same underlying services (CartService, AuthService, CheckoutService).
  */
-public class POSTerminal {
+public class CustomerTerminal {
 
     private final InputHelper input;
     private final AuthService auth;
 
     /**
-     * Constructs a POSTerminal with standard console I/O.
+     * Constructs a CustomerTerminal with standard console I/O.
      */
-    public POSTerminal() {
+    public CustomerTerminal() {
         this.input = new InputHelper(new Scanner(System.in));
         this.auth = new AuthService();
     }
 
     /**
-     * Starts the POS terminal main loop.
-     * Displays the main menu and handles user actions until exit.
+     * Starts the terminal main loop.
+     * Displays the main portal and handles user actions until exit.
      */
     public void run() {
         Dotenv.loadIfPresent();
@@ -39,16 +39,41 @@ public class POSTerminal {
         boolean isRunning = true;
 
         System.out.println("=========================================");
-        System.out.println("   WELCOME TO GARAHE NI MATEICLA (POS)   ");
+        System.out.println("   WELCOME TO GARAHE NI MATEICLA APP     ");
         System.out.println("=========================================");
 
         while (isRunning) {
-            System.out.println("\n--- MAIN MENU ---");
-            System.out.println("[1] Start New Transaction (Jollibee POS Flow)");
+            System.out.println("\n--- GARAHE NI MATEICLA PORTAL ---");
+            System.out.println("[1] Enter as Customer");
+            System.out.println("[2] Enter as Merchant");
+            System.out.println("[3] Exit System");
+
+            int portalChoice = input.getValidIntegerInput("Select an option: ");
+
+            if (portalChoice == 1) {
+                runCustomerFlow();
+            } else if (portalChoice == 2) {
+                if (authenticateAdmin()) {
+                    runMerchantFlow();
+                }
+            } else if (portalChoice == 3) {
+                isRunning = false;
+                System.out.println("Shutting down the app. Goodbye!");
+            } else {
+                System.out.println("Invalid selection. Please try again.");
+            }
+        }
+        input.close();
+    }
+
+    private void runCustomerFlow() {
+        boolean inCustomer = true;
+        while (inCustomer) {
+            System.out.println("\n--- CUSTOMER MENU ---");
+            System.out.println("[1] Order Food Now");
             System.out.println("[2] View Full Live Menu");
             System.out.println("[3] View Menu by Category");
-            System.out.println("[4] Admin: Add New Menu Item");
-            System.out.println("[5] Exit System");
+            System.out.println("[4] Return to Main Portal");
 
             int choice = input.getValidIntegerInput("Select an option: ");
 
@@ -63,19 +88,34 @@ public class POSTerminal {
                     handleCategoryFilter();
                     break;
                 case 4:
-                    if (authenticateAdmin()) {
-                        handleAdminAddNewItem();
-                    }
-                    break;
-                case 5:
-                    isRunning = false;
-                    System.out.println("Shutting down the POS terminal. Goodbye!");
+                    inCustomer = false;
                     break;
                 default:
                     System.out.println("Invalid selection. Please try again.");
             }
         }
-        input.close();
+    }
+
+    private void runMerchantFlow() {
+        boolean inMerchant = true;
+        while (inMerchant) {
+            System.out.println("\n--- MERCHANT DASHBOARD ---");
+            System.out.println("[1] Add New Menu Item");
+            System.out.println("[2] Return to Main Portal");
+
+            int choice = input.getValidIntegerInput("Select an option: ");
+
+            switch (choice) {
+                case 1:
+                    handleAdminAddNewItem();
+                    break;
+                case 2:
+                    inMerchant = false;
+                    break;
+                default:
+                    System.out.println("Invalid selection. Please try again.");
+            }
+        }
     }
 
     /**
@@ -96,7 +136,7 @@ public class POSTerminal {
             System.out.println("[4] PROCEED TO CHECKOUT");
             System.out.println("[5] Cancel Transaction (Discard Cart)");
 
-            int choice = input.getValidIntegerInput("\nCashier Action: ");
+            int choice = input.getValidIntegerInput("\nCustomer Action: ");
 
             switch (choice) {
                 case 1:
@@ -278,7 +318,7 @@ public class POSTerminal {
      */
     private void printLiveDashboard(CartService cart) {
         System.out.println("\n========================================");
-        System.out.println("          POS LIVE DASHBOARD            ");
+        System.out.println("               YOUR CART                ");
         System.out.println("========================================");
         if (cart.isEmpty()) {
             System.out.println("  [ Cart is currently empty ]");
@@ -291,10 +331,10 @@ public class POSTerminal {
                 subtotal += itemTotal;
 
                 System.out.println(" [" + (i + 1) + "] " + c.getItem().getItemName() +
-                        " (x" + c.getQuantity() + ") -> ₱" + String.format("%.2f", itemTotal));
+                        " (x" + c.getQuantity() + ") -> PHP " + String.format("%.2f", itemTotal));
             }
             System.out.println("----------------------------------------");
-            System.out.println(" RUNNING SUBTOTAL: ₱" + String.format("%.2f", subtotal));
+            System.out.println(" RUNNING SUBTOTAL: PHP " + String.format("%.2f", subtotal));
         }
         System.out.println("========================================");
     }

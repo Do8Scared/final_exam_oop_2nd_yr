@@ -69,7 +69,7 @@ public class MenuDAO {
                     hasItems = true;
                     System.out.println("ID: " + rs.getInt("id") +
                             " | " + rs.getString("item_name") +
-                            " - ₱" + String.format("%.2f", rs.getDouble("price")) +
+                            " - PHP " + String.format("%.2f", rs.getDouble("price")) +
                             " (Stock: " + rs.getInt("stock_quantity") + ")");
                 }
                 if (!hasItems) System.out.println("No items available in this category.");
@@ -122,7 +122,7 @@ public class MenuDAO {
                 boolean foundItems = false;
                 while (rs.next()) {
                     foundItems = true;
-                    System.out.printf("%-5d %-25s ₱%-9.2f %-10d %-15s%n",
+                    System.out.printf("%-5d %-25s PHP %-7.2f %-10d %-15s%n",
                             rs.getInt("id"),
                             rs.getString("item_name"),
                             rs.getDouble("price"),

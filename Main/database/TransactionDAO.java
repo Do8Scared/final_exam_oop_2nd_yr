@@ -36,7 +36,7 @@ public class TransactionDAO {
      * @return true if the transaction committed successfully, false otherwise
      */
     public static boolean processCheckout(List<CartItem> cart, String orderType, String paymentMethod,
-            double amountTendered, double packagingFee) {
+            double additionalFee) {
         if (cart == null || cart.isEmpty()) {
             System.out.println("Transaction Failed: Cart is empty.");
             return false;
@@ -50,10 +50,9 @@ public class TransactionDAO {
         }
 
         subtotal = Math.round(subtotal * 100.0) / 100.0;
-        double grandTotal = Math.round((subtotal + packagingFee) * 100.0) / 100.0;
-        double changeDue = (paymentMethod.equalsIgnoreCase("Cash"))
-                ? Math.round((amountTendered - grandTotal) * 100.0) / 100.0
-                : 0.00;
+        double grandTotal = Math.round((subtotal + additionalFee) * 100.0) / 100.0;
+        double amountTendered = grandTotal;
+        double changeDue = 0.00;
 
         String insertTxnSql = "INSERT INTO transactions (transaction_id, order_type, payment_method, total_amount, amount_tendered, change_due) VALUES (?, ?, ?, ?, ?, ?)";
         String insertItemsSql = "INSERT INTO transaction_items (transaction_id, menu_item_id, quantity, subtotal) VALUES (?, ?, ?, ?)";
@@ -70,13 +69,8 @@ public class TransactionDAO {
                 pstmtTxn.setString(2, orderType);
                 pstmtTxn.setString(3, paymentMethod);
                 pstmtTxn.setDouble(4, grandTotal);
-                if (paymentMethod.equalsIgnoreCase("Cash")) {
-                    pstmtTxn.setDouble(5, amountTendered);
-                    pstmtTxn.setDouble(6, changeDue);
-                } else {
-                    pstmtTxn.setNull(5, Types.NUMERIC);
-                    pstmtTxn.setNull(6, Types.NUMERIC);
-                }
+                pstmtTxn.setDouble(5, amountTendered);
+                pstmtTxn.setDouble(6, changeDue);
                 pstmtTxn.executeUpdate();
             }
 
@@ -155,7 +149,7 @@ public class TransactionDAO {
 
             conn.commit();
 
-            printUnifiedReceipt(txnId, cart, subtotal, packagingFee, grandTotal, paymentMethod, amountTendered,
+            printUnifiedReceipt(txnId, cart, subtotal, additionalFee, grandTotal, paymentMethod, amountTendered,
                     changeDue);
             return true;
 
@@ -197,12 +191,12 @@ public class TransactionDAO {
      * @param tendered   the cash amount tendered (for Cash payments)
      * @param change     the change amount due (for Cash payments)
      */
-    private static void printUnifiedReceipt(String txnId, List<CartItem> cart, double subtotal, double packingFee,
+    private static void printUnifiedReceipt(String txnId, List<CartItem> cart, double subtotal, double additionalFee,
             double grandTotal, String payMethod, double tendered, double change) {
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
         System.out.println("\n========================================");
-        System.out.println("         GARAHE NI MATEICLA POS         ");
+        System.out.println("         GARAHE NI MATEICLA APP         ");
         System.out.println("           OFFICIAL RECEIPT             ");
         System.out.println("========================================");
         System.out.println("ID  : " + txnId);
@@ -214,21 +208,16 @@ public class TransactionDAO {
             if (!c.getItem().getSpecialDetails().isEmpty()) {
                 System.out.println("  " + c.getItem().getSpecialDetails());
             }
-            System.out.println("  Subtotal: ₱" + String.format("%.2f", c.getSubtotal()));
+            System.out.println("  Subtotal: PHP " + String.format("%.2f", c.getSubtotal()));
         }
 
         System.out.println("----------------------------------------");
-        System.out.println("SUBTOTAL     : ₱" + String.format("%.2f", subtotal));
-        if (packingFee > 0) {
-            System.out.println("PACKAGING FEE: ₱" + String.format("%.2f", packingFee));
+        System.out.println("SUBTOTAL     : PHP " + String.format("%.2f", subtotal));
+        if (additionalFee > 0) {
+            System.out.println("DELIVERY FEE : PHP " + String.format("%.2f", additionalFee));
         }
-        System.out.println("GRAND TOTAL  : ₱" + String.format("%.2f", grandTotal));
+        System.out.println("GRAND TOTAL  : PHP " + String.format("%.2f", grandTotal));
         System.out.println("PAYMENT VIA  : " + payMethod.toUpperCase());
-
-        if (payMethod.equalsIgnoreCase("Cash")) {
-            System.out.println("TENDERED     : ₱" + String.format("%.2f", tendered));
-            System.out.println("CHANGE DUE   : ₱" + String.format("%.2f", change));
-        }
         System.out.println("========================================");
         System.out.println("       THANK YOU, PLEASE COME AGAIN!    ");
         System.out.println("========================================\n");
