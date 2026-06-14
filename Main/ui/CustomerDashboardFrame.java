@@ -19,6 +19,8 @@ public class CustomerDashboardFrame extends JFrame {
     private JPanel menuGridPanel;
     private JButton viewCartBtn;
     private String currentCategoryFilter = "All";
+    private JTextField searchField;
+    private JComboBox<String> sortCombo;
 
     public CustomerDashboardFrame() {
         this(new ArrayList<>());
@@ -26,7 +28,7 @@ public class CustomerDashboardFrame extends JFrame {
 
     public CustomerDashboardFrame(List<CartItem> cart) {
         this.cart = cart;
-        setTitle("Garahe Ni Mateicla - Food Delivery");
+        setTitle("Garahe Ni Mateicla - Food Delivery | LAF: " + UIManager.getLookAndFeel().getName());
         setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -35,7 +37,6 @@ public class CustomerDashboardFrame extends JFrame {
         // WEST (Sidebar)
         JPanel sidebar = new JPanel();
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBackground(new Color(245, 245, 245));
         sidebar.setPreferredSize(new Dimension(150, 0));
         sidebar.setBorder(BorderFactory.createEmptyBorder(20, 10, 20, 10));
 
@@ -64,29 +65,34 @@ public class CustomerDashboardFrame extends JFrame {
 
         // CENTER (Main Content)
         JPanel mainContent = new JPanel(new BorderLayout());
-        mainContent.setBackground(Color.WHITE);
 
         // Content Header
         JPanel headerPanel = new JPanel(new BorderLayout());
-        headerPanel.setBackground(Color.WHITE);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
 
         // Top Bar
-        JPanel topBar = new JPanel(new BorderLayout());
-        topBar.setBackground(Color.WHITE);
+        JPanel topBar = new JPanel(new BorderLayout(10, 0));
         
-        JTextField searchField = new JTextField("Search food...");
-        searchField.setFont(new Font("Arial", Font.PLAIN, 14));
-        searchField.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(Color.LIGHT_GRAY, 1, true),
-            BorderFactory.createEmptyBorder(5, 10, 5, 10)
-        ));
+        JPanel searchSortPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+
+        searchField = new JTextField("Search food...", 15);
+        searchField.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent e) {
+                if (searchField.getText().equals("Search food...")) searchField.setText("");
+            }
+            public void focusLost(java.awt.event.FocusEvent e) {
+                if (searchField.getText().isEmpty()) searchField.setText("Search food...");
+            }
+        });
+        searchField.addActionListener(e -> loadMenuData());
+
+        sortCombo = new JComboBox<>(new String[]{"Sort by ID", "Sort by Name", "Sort by Price", "Sort by Quantity"});
+        sortCombo.addActionListener(e -> loadMenuData());
+
+        searchSortPanel.add(searchField);
+        searchSortPanel.add(sortCombo);
         
         viewCartBtn = new JButton("🛒 View Cart (" + cart.size() + ")");
-        viewCartBtn.setFont(new Font("Arial", Font.BOLD, 14));
-        viewCartBtn.setBackground(new Color(240, 240, 240));
-        viewCartBtn.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
-        viewCartBtn.setFocusPainted(false);
         viewCartBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         viewCartBtn.addActionListener(e -> {
             new CartFrame(cart, this).setVisible(true);
@@ -94,26 +100,19 @@ public class CustomerDashboardFrame extends JFrame {
         });
         
         JPanel topBarRight = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        topBarRight.setBackground(Color.WHITE);
         topBarRight.add(viewCartBtn);
 
-        topBar.add(searchField, BorderLayout.CENTER);
-        topBar.add(Box.createRigidArea(new Dimension(20, 0)), BorderLayout.EAST);
+        topBar.add(searchSortPanel, BorderLayout.CENTER);
         topBar.add(topBarRight, BorderLayout.EAST);
 
         // Category Bar
         JPanel categoryBar = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        categoryBar.setBackground(Color.WHITE);
         
         List<String> categories = MenuDAO.getActiveCategories();
         categories.add(0, "All");
         
         for (String cat : categories) {
             JButton catBtn = new JButton(cat);
-            catBtn.setFont(new Font("Arial", Font.BOLD, 12));
-            catBtn.setBackground(new Color(245, 245, 245));
-            catBtn.setBorder(BorderFactory.createEmptyBorder(8, 15, 8, 15));
-            catBtn.setFocusPainted(false);
             catBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
             catBtn.addActionListener(e -> {
                 currentCategoryFilter = cat;
@@ -135,7 +134,6 @@ public class CustomerDashboardFrame extends JFrame {
 
         // Content Grid
         menuGridPanel = new JPanel(new GridLayout(0, 3, 20, 20));
-        menuGridPanel.setBackground(Color.WHITE);
         menuGridPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
 
         JScrollPane gridScroll = new JScrollPane(menuGridPanel);
@@ -151,12 +149,8 @@ public class CustomerDashboardFrame extends JFrame {
 
     private JButton createSidebarButton(String text) {
         JButton btn = new JButton(text);
-        btn.setFont(new Font("Arial", Font.BOLD, 14));
         btn.setAlignmentX(Component.CENTER_ALIGNMENT);
         btn.setMaximumSize(new Dimension(130, 40));
-        btn.setBackground(new Color(245, 245, 245));
-        btn.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        btn.setFocusPainted(false);
         btn.setHorizontalAlignment(SwingConstants.LEFT);
         btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         return btn;
@@ -170,21 +164,43 @@ public class CustomerDashboardFrame extends JFrame {
         if (!"All".equals(currentCategoryFilter)) {
             sql += " AND category = '" + currentCategoryFilter.replace("'", "''") + "'";
         }
-        sql += " ORDER BY id ASC";
+
+        String searchTerm = searchField != null ? searchField.getText() : "";
+        if (!searchTerm.trim().isEmpty() && !searchTerm.equals("Search food...")) {
+            sql += " AND item_name ILIKE ?";
+        }
+
+        String sortBy = sortCombo != null ? (String) sortCombo.getSelectedItem() : "Sort by ID";
+        if (sortBy != null) {
+            switch (sortBy) {
+                case "Sort by Name": sql += " ORDER BY item_name ASC"; break;
+                case "Sort by Price": sql += " ORDER BY price ASC"; break;
+                case "Sort by Quantity": sql += " ORDER BY stock_quantity DESC"; break;
+                default: sql += " ORDER BY id ASC"; break;
+            }
+        } else {
+            sql += " ORDER BY id ASC";
+        }
 
         try (Connection conn = DatabaseHelper.getConnection();
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sql)) {
-            while (rs.next()) {
-                int id = rs.getInt("id");
-                String name = rs.getString("item_name");
-                double price = rs.getDouble("price");
-                int stock = rs.getInt("stock_quantity");
-                String category = rs.getString("category");
-                String specialAttr = rs.getString("special_attribute");
-                
-                MenuItem item = models.MenuItemFactory.create(id, name, price, stock, category, specialAttr);
-                menuGridPanel.add(createItemCard(item));
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql)) {
+             
+            if (!searchTerm.trim().isEmpty() && !searchTerm.equals("Search food...")) {
+                pstmt.setString(1, "%" + searchTerm.trim() + "%");
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    int id = rs.getInt("id");
+                    String name = rs.getString("item_name");
+                    double price = rs.getDouble("price");
+                    int stock = rs.getInt("stock_quantity");
+                    String category = rs.getString("category");
+                    String specialAttr = rs.getString("special_attribute");
+                    
+                    MenuItem item = models.MenuItemFactory.create(id, name, price, stock, category, specialAttr);
+                    menuGridPanel.add(createItemCard(item));
+                }
             }
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error loading menu: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE);
@@ -247,13 +263,9 @@ public class CustomerDashboardFrame extends JFrame {
         String specialDetails = item.getSpecialDetails();
 
         JPanel card = new JPanel(new BorderLayout());
-        card.setBackground(Color.WHITE);
-        card.setBorder(new LineBorder(new Color(230, 230, 230), 1, true));
 
         // Top: Image Placeholder
         JLabel imageLabel = new JLabel("", SwingConstants.CENTER);
-        imageLabel.setOpaque(true);
-        imageLabel.setBackground(new Color(250, 250, 250));
         imageLabel.setPreferredSize(new Dimension(150, 120));
         
         ImageIcon icon = loadImage(name);
@@ -267,20 +279,13 @@ public class CustomerDashboardFrame extends JFrame {
 
         // Middle: Info
         JPanel infoPanel = new JPanel(new GridLayout(3, 1, 0, 2));
-        infoPanel.setBackground(Color.WHITE);
         infoPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
         JLabel nameLabel = new JLabel(name);
-        nameLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        nameLabel.setForeground(Color.DARK_GRAY);
         
         JLabel specialLabel = new JLabel(specialDetails);
-        specialLabel.setFont(new Font("Arial", Font.ITALIC, 11));
-        specialLabel.setForeground(new Color(150, 150, 150));
 
         JLabel priceLabel = new JLabel("PHP " + String.format("%.2f", price));
-        priceLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        priceLabel.setForeground(new Color(255, 140, 0)); // Orange
 
         infoPanel.add(nameLabel);
         infoPanel.add(specialLabel);
@@ -289,20 +294,12 @@ public class CustomerDashboardFrame extends JFrame {
 
         // Bottom: Add button
         JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBackground(Color.WHITE);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(0, 10, 10, 10));
 
         JLabel stockLabel = new JLabel("Stock: " + stock);
-        stockLabel.setFont(new Font("Arial", Font.PLAIN, 12));
-        stockLabel.setForeground(Color.GRAY);
         bottomPanel.add(stockLabel, BorderLayout.WEST);
 
         JButton addBtn = new JButton("+ Add");
-        addBtn.setFont(new Font("Arial", Font.BOLD, 12));
-        addBtn.setBackground(new Color(34, 139, 34)); // Green
-        addBtn.setForeground(Color.WHITE);
-        addBtn.setFocusPainted(false);
-        addBtn.setBorder(BorderFactory.createEmptyBorder(5, 15, 5, 15));
         addBtn.setCursor(new Cursor(Cursor.HAND_CURSOR));
         
         if (stock <= 0) {

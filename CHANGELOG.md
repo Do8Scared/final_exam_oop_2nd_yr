@@ -2,6 +2,23 @@
 
 All notable changes made during the recent hardening/audit work are documented here.
 
+## 2026-06-14
+
+### Added
+- Complete Java Swing Graphical User Interface (GUI) replacement for the legacy CLI.
+- New `ui` package containing:
+  - `RoleSelectionFrame`
+  - `CustomerDashboardFrame`
+  - `CartFrame`
+  - `AdminDashboardFrame` (replaced `MerchantDashboardFrame`)
+- Real-time search functionality hooked to `MenuDAO.getAllMenuItems(searchTerm, sortBy)` via `ILIKE`.
+- Dropdown sorting options (by Name, Price, Quantity) for both Customer and Admin Dashboards.
+- Live database queries displaying results in a dynamic GridLayout and JTable natively.
+
+### Changed
+- Refactored `CustomerDashboardFrame` to mimic modern food delivery applications.
+- Sunset the old text-based `MerchantDashboardFrame` and replaced it with a modern `AdminDashboardFrame` featuring `CardLayout`.
+
 ## 2026-05-27
 
 ### Added

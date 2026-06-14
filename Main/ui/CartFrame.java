@@ -29,7 +29,6 @@ public class CartFrame extends JFrame {
         setLayout(new BorderLayout());
 
         JLabel headerLabel = new JLabel("Your Cart", SwingConstants.CENTER);
-        headerLabel.setFont(new Font("Arial", Font.BOLD, 24));
         headerLabel.setBorder(BorderFactory.createEmptyBorder(15, 10, 15, 10));
         add(headerLabel, BorderLayout.NORTH);
 
@@ -41,8 +40,6 @@ public class CartFrame extends JFrame {
         };
         cartTable = new JTable(tableModel);
         cartTable.setRowHeight(25);
-        cartTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 14));
-        cartTable.setFont(new Font("Arial", Font.PLAIN, 14));
         
         JScrollPane scrollPane = new JScrollPane(cartTable);
         scrollPane.setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
@@ -72,7 +69,6 @@ public class CartFrame extends JFrame {
         rightPanel.add(removeBtn);
 
         totalLabel = new JLabel("Total: PHP 0.00", SwingConstants.CENTER);
-        totalLabel.setFont(new Font("Arial", Font.BOLD, 16));
         rightPanel.add(totalLabel);
         
         add(rightPanel, BorderLayout.EAST);
@@ -81,14 +77,12 @@ public class CartFrame extends JFrame {
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 20, 10));
 
         JButton backBtn = new JButton("Back to Menu");
-        backBtn.setFont(new Font("Arial", Font.PLAIN, 14));
         backBtn.addActionListener(e -> {
             parentFrame.setVisible(true);
             dispose();
         });
 
         JButton placeOrderBtn = new JButton("Place Order");
-        placeOrderBtn.setFont(new Font("Arial", Font.BOLD, 14));
         placeOrderBtn.setBackground(new Color(34, 139, 34));
         placeOrderBtn.setForeground(Color.WHITE);
         placeOrderBtn.addActionListener(e -> handleCheckout(orderTypeCombo.getSelectedItem().toString(), paymentCombo.getSelectedItem().toString()));
@@ -162,10 +156,8 @@ public class CartFrame extends JFrame {
             String receiptText = baos.toString();
             
             JTextArea textArea = new JTextArea(receiptText);
-            textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+            textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
             textArea.setEditable(false);
-            textArea.setBackground(new Color(20, 20, 20));
-            textArea.setForeground(new Color(200, 200, 200));
             
             JScrollPane scrollPane = new JScrollPane(textArea);
             scrollPane.setPreferredSize(new Dimension(350, 450));

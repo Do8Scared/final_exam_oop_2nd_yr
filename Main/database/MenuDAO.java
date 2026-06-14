@@ -140,4 +140,78 @@ public class MenuDAO {
             System.out.println(e.getMessage());
         }
     }
+
+    /**
+     * Retrieves all active menu items and returns them as a DefaultTableModel for use in JTable.
+     * Supports searching and sorting.
+     */
+    public static javax.swing.table.DefaultTableModel getAllMenuItems(String searchTerm, String sortBy) {
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(
+            new Object[]{"ID", "Name", "Price", "Stock", "Category", "Special Attribute"}, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        String sql = "SELECT id, item_name, price, stock_quantity, category, special_attribute FROM menu_items WHERE is_active = TRUE";
+        
+        if (searchTerm != null && !searchTerm.trim().isEmpty() && !searchTerm.equals("Search food...")) {
+            sql += " AND item_name ILIKE ?";
+        }
+
+        if (sortBy != null) {
+            switch (sortBy) {
+                case "Sort by Name": sql += " ORDER BY item_name ASC"; break;
+                case "Sort by Price": sql += " ORDER BY price ASC"; break;
+                case "Sort by Quantity": sql += " ORDER BY stock_quantity DESC"; break;
+                default: sql += " ORDER BY id ASC"; break;
+            }
+        } else {
+            sql += " ORDER BY id ASC";
+        }
+
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            if (searchTerm != null && !searchTerm.trim().isEmpty() && !searchTerm.equals("Search food...")) {
+                pstmt.setString(1, "%" + searchTerm.trim() + "%");
+            }
+
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    model.addRow(new Object[]{
+                        rs.getInt("id"),
+                        rs.getString("item_name"),
+                        String.format("%.2f", rs.getDouble("price")),
+                        rs.getInt("stock_quantity"),
+                        rs.getString("category"),
+                        rs.getString("special_attribute")
+                    });
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error fetching all items for table: " + e.getMessage());
+        }
+        return model;
+    }
+
+    /**
+     * Soft deletes a menu item by setting is_active = FALSE.
+     * @param id the menu item ID to delete
+     * @return true if successful
+     */
+    public static boolean deleteItem(int id) {
+        String sql = "UPDATE menu_items SET is_active = FALSE WHERE id = ?";
+        try (Connection conn = DatabaseHelper.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            int rowsAffected = pstmt.executeUpdate();
+            return rowsAffected > 0;
+        } catch (SQLException e) {
+            System.out.println("Error soft deleting item: " + e.getMessage());
+            return false;
+        }
+    }
 }

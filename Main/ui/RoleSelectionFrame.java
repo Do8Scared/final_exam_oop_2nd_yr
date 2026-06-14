@@ -24,7 +24,6 @@ public class RoleSelectionFrame extends JFrame {
         setLayout(new BorderLayout());
 
         JLabel titleLabel = new JLabel("Welcome to Garahe Ni Mateicla", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(30, 10, 20, 10));
         add(titleLabel, BorderLayout.NORTH);
 
@@ -32,23 +31,21 @@ public class RoleSelectionFrame extends JFrame {
         buttonPanel.setBorder(BorderFactory.createEmptyBorder(10, 60, 50, 60));
 
         JButton customerBtn = new JButton("Enter as Customer");
-        customerBtn.setFont(new Font("Arial", Font.PLAIN, 16));
         customerBtn.addActionListener(e -> {
             new CustomerDashboardFrame().setVisible(true);
             dispose();
         });
 
-        JButton merchantBtn = new JButton("Enter as Merchant");
-        merchantBtn.setFont(new Font("Arial", Font.PLAIN, 16));
-        merchantBtn.addActionListener(e -> {
+        JButton adminBtn = new JButton("Enter as Admin");
+        adminBtn.addActionListener(e -> {
             if (authenticateAdmin()) {
-                new MerchantDashboardFrame().setVisible(true);
+                new AdminDashboardFrame().setVisible(true);
                 dispose();
             }
         });
 
         buttonPanel.add(customerBtn);
-        buttonPanel.add(merchantBtn);
+        buttonPanel.add(adminBtn);
         add(buttonPanel, BorderLayout.CENTER);
     }
 

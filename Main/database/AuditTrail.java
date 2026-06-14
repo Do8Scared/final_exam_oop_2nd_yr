@@ -82,4 +82,53 @@ public class AuditTrail {
             ps.executeUpdate();
         }
     }
+
+    /**
+     * Retrieves all audit logs and returns them as a DefaultTableModel.
+     */
+    public static javax.swing.table.DefaultTableModel getAuditLogsTableModel() {
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(
+            new Object[]{"ID", "Event Time", "Actor", "Action", "Target ID", "Details"}, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        String sql = "SELECT id, event_time, actor, event_type, target_id, details FROM audit_logs ORDER BY event_time DESC";
+        try (Connection conn = DatabaseHelper.getConnection();
+             java.sql.Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getLong("id"),
+                    rs.getTimestamp("event_time").toString(),
+                    rs.getString("actor"),
+                    rs.getString("event_type"),
+                    rs.getString("target_id"),
+                    rs.getString("details")
+                });
+            }
+        } catch (SQLException e) {
+            System.out.println("Error fetching audit logs: " + e.getMessage());
+        }
+        return model;
+    }
+
+    /**
+     * Clears all audit logs from the database.
+     * @return true if successful
+     */
+    public static boolean clearAllAudits() {
+        String sql = "TRUNCATE TABLE audit_logs";
+        try (Connection conn = DatabaseHelper.getConnection();
+             java.sql.Statement stmt = conn.createStatement()) {
+            stmt.executeUpdate(sql);
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Error clearing audit logs: " + e.getMessage());
+            return false;
+        }
+    }
 }

@@ -222,4 +222,36 @@ public class TransactionDAO {
         System.out.println("       THANK YOU, PLEASE COME AGAIN!    ");
         System.out.println("========================================\n");
     }
+
+    /**
+     * Retrieves all transactions and returns them as a DefaultTableModel.
+     */
+    public static javax.swing.table.DefaultTableModel getTransactionHistoryTableModel() {
+        javax.swing.table.DefaultTableModel model = new javax.swing.table.DefaultTableModel(
+            new Object[]{"Transaction ID", "Date", "Order Type", "Payment Method", "Grand Total"}, 0
+        ) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+
+        String sql = "SELECT transaction_id, created_at, order_type, payment_method, total_amount FROM transactions ORDER BY created_at DESC";
+        try (Connection conn = DatabaseHelper.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                model.addRow(new Object[]{
+                    rs.getString("transaction_id"),
+                    rs.getTimestamp("created_at") != null ? rs.getTimestamp("created_at").toString() : "N/A",
+                    rs.getString("order_type"),
+                    rs.getString("payment_method"),
+                    String.format("PHP %.2f", rs.getDouble("total_amount"))
+                });
+            }
+        } catch (SQLException e) {
+            System.out.println("Error fetching transaction history: " + e.getMessage());
+        }
+        return model;
+    }
 }

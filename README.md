@@ -1,6 +1,6 @@
 # Garahe ni Mateicla - Online Food Ordering System
 
-An enterprise-grade, object-oriented Command Line Interface (CLI) application simulating a modern food delivery and ordering platform (e.g., GrabFood, Foodpanda). It features live cloud synchronization via Supabase (PostgreSQL), ACID database transactions, and a robust cart management system.
+An enterprise-grade, object-oriented Graphical User Interface (GUI) application simulating a modern food delivery and ordering platform (e.g., GrabFood, Foodpanda). Built purely with Java Swing, it features live cloud synchronization via Supabase (PostgreSQL), ACID database transactions, and a robust cart management system.
 
 ## 👨💻 Development Team
 * **Mirexelle** (Lead Developer / Architect)
