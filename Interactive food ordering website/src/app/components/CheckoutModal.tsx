@@ -73,9 +73,10 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
         });
 
         if (response.ok) {
+          const responseData = await response.json();
           const now = new Date();
           const receipt: OrderReceipt = {
-            orderNumber: Math.random().toString(36).substring(2, 10).toUpperCase(),
+            orderNumber: responseData.transactionId || Math.random().toString(36).substring(2, 10).toUpperCase(),
             date: now.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }),
             time: now.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }),
             customer: { name: form.name, email: form.email, phone: form.phone, address: form.address },
@@ -89,8 +90,12 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
           onSuccess(receipt);
           setStep(3);
         } else {
-          const errorMsg = await response.text();
-          alert("Checkout failed: " + errorMsg);
+          try {
+            const errorMsg = await response.json();
+            alert("Checkout failed: " + errorMsg.error);
+          } catch {
+            alert("Checkout failed.");
+          }
         }
       } catch (err) {
         console.error("Checkout error:", err);

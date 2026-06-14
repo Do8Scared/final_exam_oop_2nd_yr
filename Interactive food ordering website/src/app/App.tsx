@@ -85,7 +85,7 @@ const CATEGORIES = ["All", "Mains", "Soups", "Sides", "Add-ons", "Desserts", "Dr
 export default function App() {
   const [menuItems, setMenuItems] = useState<MenuEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     fetch("http://localhost:8081/api/menu")
       .then(res => res.json())

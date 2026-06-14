@@ -27,11 +27,43 @@ export function LoginModal({ onClose, onLogin }: LoginModalProps) {
     return !Object.values(e).some(Boolean);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
-    const name = tab === "login" ? form.email.split("@")[0] : form.name;
-    onLogin({ name, email: form.email });
-    onClose();
+    
+    try {
+      if (tab === "register") {
+        const res = await fetch("http://localhost:8081/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: form.name, email: form.email, password: form.password })
+        });
+        if (res.ok) {
+          alert("Registration successful! You can now log in.");
+          setTab("login");
+          setForm(f => ({...f, password: "", confirm: ""}));
+        } else {
+          const data = await res.json();
+          setErrors(e => ({...e, email: data.error || "Registration failed"}));
+        }
+      } else {
+        const res = await fetch("http://localhost:8081/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: form.email, password: form.password })
+        });
+        if (res.ok) {
+          const user = await res.json();
+          onLogin({ name: user.name, email: user.email });
+          onClose();
+        } else {
+          const data = await res.json();
+          setErrors(e => ({...e, password: data.error || "Invalid credentials"}));
+        }
+      }
+    } catch (err) {
+      console.error("Auth error:", err);
+      alert("Cannot connect to server.");
+    }
   };
 
   const inputField = (

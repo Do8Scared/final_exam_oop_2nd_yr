@@ -33,13 +33,13 @@ public class TransactionDAO {
      * @param amountTendered the cash amount provided by the customer (for Cash
      *                       payments)
      * @param packagingFee   the packaging fee to add to the total (0 for Dine-In)
-     * @return true if the transaction committed successfully, false otherwise
+     * @return the transaction ID if successful, null otherwise
      */
-    public static boolean processCheckout(List<CartItem> cart, String orderType, String paymentMethod,
+    public static String processCheckout(List<CartItem> cart, String orderType, String paymentMethod,
             double additionalFee) {
         if (cart == null || cart.isEmpty()) {
             System.out.println("Transaction Failed: Cart is empty.");
-            return false;
+            return null;
         }
 
         String txnId = "TXN-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase() + "-"
@@ -144,14 +144,14 @@ public class TransactionDAO {
             } catch (SQLException ex) {
                 System.out.println("Failed to write audit log: " + ex.getMessage());
                 conn.rollback();
-                return false;
+                return null;
             }
 
             conn.commit();
 
             printUnifiedReceipt(txnId, cart, subtotal, additionalFee, grandTotal, paymentMethod, amountTendered,
                     changeDue);
-            return true;
+            return txnId;
 
         } catch (SQLException e) {
             if (conn != null) {
@@ -166,7 +166,7 @@ public class TransactionDAO {
             } else {
                 System.out.println(">> [TRANSACTION FAILED] Database Error: " + e.getMessage());
             }
-            return false;
+            return null;
         } finally {
             if (conn != null) {
                 try {

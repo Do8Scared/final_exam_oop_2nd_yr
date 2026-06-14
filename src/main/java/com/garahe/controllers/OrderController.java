@@ -31,17 +31,17 @@ public class OrderController {
             cart.add(new CartItem(menuItem, itemPayload.getQuantity()));
         }
 
-        boolean success = TransactionDAO.processCheckout(
+        String txnId = TransactionDAO.processCheckout(
                 cart,
                 payload.getOrderType(),
                 payload.getPaymentMethod(),
                 payload.getAdditionalFee()
         );
 
-        if (success) {
-            return ResponseEntity.ok("Checkout successful");
+        if (txnId != null) {
+            return ResponseEntity.ok("{\"transactionId\": \"" + txnId + "\"}");
         } else {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Checkout failed. Please check stock or server logs.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("{\"error\": \"Checkout failed. Please check stock.\"}");
         }
     }
 
