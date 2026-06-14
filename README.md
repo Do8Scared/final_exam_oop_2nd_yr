@@ -92,6 +92,12 @@ This system was built strictly adhering to modern Object-Oriented Programming (O
   * **Auth DAO:** The `AuthController` securely registers and logs in users by calling `userDAO.authenticateUser()`. The Controller does not write or see any SQL queries; it relies entirely on the Abstraction provided by the `UserDAO` interface. The SQL implementation is strictly hidden away.
   * **Transaction DAO:** When a customer completes checkout, the system calls a clean, readable method: `TransactionDAO.processCheckout()`. The DAO completely hides the complex mechanics of `PreparedStatement` mapping, looping over arrays, committing ACID transactions, and rollback errors away from the rest of the application.
 
+### 5. Exception Handling (Error Management)
+* **Concept:** Gracefully capturing and handling runtime errors (like database connection drops) using `try-catch` blocks to prevent the application from crashing unexpectedly.
+* **Where it is used:** 
+  * **Database Transactions:** In our DAOs (e.g., `TransactionDAO`), all PostgreSQL queries are wrapped in `try-catch` blocks. If the database connection drops or a query fails mid-checkout, the `SQLException` is caught, a `.rollback()` is safely triggered to ensure no money or stock is lost, and an error message is printed gracefully instead of the system crashing.
+  * **Try-With-Resources:** We utilize modern Java `try-with-resources` blocks (e.g., `try (Connection conn = DatabaseHelper.getConnection())`) which guarantees that sensitive database connections are automatically closed and memory is freed, even if an error occurs.
+
 ---
 
 ## 🚀 Tech Stack
