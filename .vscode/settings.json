@@ -2,5 +2,6 @@
     "java.project.referencedLibraries": [
         "Main/libs/**/*.jar"
     ],
-    "java.debug.settings.vmArgs": "--enable-native-access=ALL-UNNAMED"
+    "java.debug.settings.vmArgs": "--enable-native-access=ALL-UNNAMED",
+    "java.compile.nullAnalysis.mode": "automatic"
 }
