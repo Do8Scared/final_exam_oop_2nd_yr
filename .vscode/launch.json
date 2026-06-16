@@ -3,6 +3,13 @@
     "configurations": [
         {
             "type": "java",
+            "name": "DatabaseHelper",
+            "request": "launch",
+            "mainClass": "com.garahe.database.DatabaseHelper",
+            "projectName": "garahe-api"
+        },
+        {
+            "type": "java",
             "name": "GaraheApplication",
             "request": "launch",
             "mainClass": "com.garahe.GaraheApplication",

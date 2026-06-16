@@ -193,6 +193,7 @@ public class MenuDAO {
             }
         } catch (SQLException e) {
             System.out.println("Error fetching all items for table: " + e.getMessage());
+            throw new RuntimeException("Database error: " + e.getMessage(), e);
         }
         return model;
     }
@@ -242,6 +243,7 @@ public class MenuDAO {
             }
         } catch (SQLException e) {
             System.out.println("Error fetching all items for list: " + e.getMessage());
+            throw new RuntimeException("Database error: " + e.getMessage(), e);
         }
         return items;
     }

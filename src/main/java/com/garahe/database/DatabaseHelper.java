@@ -51,13 +51,32 @@ public class DatabaseHelper {
     public static Connection getConnection() throws SQLException {
         String url = resolveRequiredSetting(URL_ENV, URL_PROPERTY, "database URL");
         url = applyPoolerSafeSettings(url);
+        
+        // Add fast timeouts to prevent the app from freezing on restrictive networks
+        if (!url.contains("loginTimeout=")) {
+            url += (url.contains("?") ? "&" : "?") + "loginTimeout=5&connectTimeout=5";
+        }
+        
         String user = resolveRequiredSetting(USER_ENV, USER_PROPERTY, "database username");
         String password = resolveRequiredSetting(PASSWORD_ENV, PASSWORD_PROPERTY, "database password");
         try {
+            DriverManager.setLoginTimeout(5);
             return DriverManager.getConnection(url, user, password);
         } catch (SQLException e) {
+            String msg = e.getMessage() != null ? e.getMessage().toLowerCase() : "";
+            
+            // Handle restrictive WiFi / Firewall blocks
+            if (msg.contains("the connection attempt failed") || msg.contains("timed out")) {
+                throw new SQLException(
+                        "Database connection timed out or failed. If you are on a public or restrictive WiFi network, " +
+                        "it is likely blocking the database port. Please try a different network or mobile hotspot. " +
+                        "Original error: " + e.getMessage(),
+                        e
+                );
+            }
+            
             // Common local-dev failure: driver jar not on classpath.
-            if (e.getMessage() != null && e.getMessage().toLowerCase().contains("no suitable driver")) {
+            if (msg.contains("no suitable driver")) {
                 throw new SQLException(
                         "No suitable JDBC driver found for the database URL. " +
                         "Make sure the PostgreSQL driver jar is on the runtime classpath (e.g., 'libs/postgresql-42.6.0.jar' in this project). " +
