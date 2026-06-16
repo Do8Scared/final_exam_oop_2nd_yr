@@ -69,7 +69,7 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
       };
 
       try {
-        const response = await fetch("http://localhost:8081/api/checkout", {
+        const response = await fetch("https://final-exam-oop-2nd-yr.onrender.com/api/checkout", {
           method: "POST",
           headers: {
             "Content-Type": "application/json"

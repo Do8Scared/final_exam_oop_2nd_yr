@@ -32,7 +32,7 @@ export function LoginModal({ onClose, onLogin }: LoginModalProps) {
     
     try {
       if (tab === "register") {
-        const res = await fetch("http://localhost:8081/api/auth/register", {
+        const res = await fetch("https://final-exam-oop-2nd-yr.onrender.com/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: form.name, email: form.email, password: form.password })
@@ -46,7 +46,7 @@ export function LoginModal({ onClose, onLogin }: LoginModalProps) {
           setErrors(e => ({...e, email: data.error || "Registration failed"}));
         }
       } else {
-        const res = await fetch("http://localhost:8081/api/auth/login", {
+        const res = await fetch("https://final-exam-oop-2nd-yr.onrender.com/api/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: form.email, password: form.password })

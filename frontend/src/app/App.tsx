@@ -97,7 +97,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch("http://localhost:8081/api/menu")
+    fetch("https://final-exam-oop-2nd-yr.onrender.com/api/menu")
       .then(res => res.json())
       .then(data => {
         const merged = data.map((item: any) => {

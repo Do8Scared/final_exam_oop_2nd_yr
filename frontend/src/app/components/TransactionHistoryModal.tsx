@@ -23,7 +23,7 @@ export function TransactionHistoryModal({ user, onClose }: HistoryModalProps) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`http://localhost:8081/api/checkout/history?email=${encodeURIComponent(user.email)}`)
+    fetch(`https://final-exam-oop-2nd-yr.onrender.com/api/checkout/history?email=${encodeURIComponent(user.email)}`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch history");
         return res.json();
