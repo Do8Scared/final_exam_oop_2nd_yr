@@ -14,3 +14,7 @@ target/
 node_modules/
 dist/
 .DS_Store
+
+# Academic Paper and Temporary Log Files
+Ordering System - System Documentation & OOP Guide.md
+git_history.txt

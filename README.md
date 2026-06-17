@@ -61,6 +61,7 @@ To ensure the code is clean, scalable, and easy to debug, the system is separate
 * **Models (`models/` package):** The blueprints for the data. Classes like `MenuItem`, `CartItem`, `Person`, and `User` represent the core entities of the business. They hold the data and enforce basic business rules (e.g., preventing negative prices).
 * **Controllers (`controllers/` package):** The middle-men (`AuthController` and `OrderController`). They receive HTTP requests from the React frontend, pass the data to the DAOs, and send JSON responses back.
 * **DAOs (`database/` package):** The Data Access Objects (`TransactionDAO`, `UserDAO`). They securely communicate with the PostgreSQL database, execute SQL queries (like inserting transactions or verifying passwords), and return the result.
+* **Factories (`models/MenuItemFactory.java`):** Centralized logic to intelligently instantiate the correct child class (e.g., creating a `Soup` or `Beverage` dynamically based on the database category).
 
 ---
 
@@ -98,6 +99,10 @@ This system was built strictly adhering to modern Object-Oriented Programming (O
   * **Database Transactions:** In our DAOs (e.g., `TransactionDAO`), all PostgreSQL queries are wrapped in `try-catch` blocks. If the database connection drops or a query fails mid-checkout, the `SQLException` is caught, a `.rollback()` is safely triggered to ensure no money or stock is lost, and an error message is printed gracefully instead of the system crashing.
   * **Try-With-Resources:** We utilize modern Java `try-with-resources` blocks (e.g., `try (Connection conn = DatabaseHelper.getConnection())`) which guarantees that sensitive database connections are automatically closed and memory is freed, even if an error occurs.
 
+### 6. Advanced Design Patterns
+* **Factory Pattern:** The `MenuItemFactory` handles the complex object creation logic. Instead of `MenuDAO` cluttering itself with `if-else` blocks to figure out what object to instantiate, the Factory centralizes this logic, creating a clean separation of concerns.
+* **Strategy Pattern:** `DeliveryOrder` and `PickUpOrder` objects dynamically enforce their own rules on how fees are calculated using the `OrderType` interface.
+
 ---
 
 ## 🚀 Tech Stack
@@ -106,6 +111,7 @@ This system was built strictly adhering to modern Object-Oriented Programming (O
 * **Language:** Java 17+
 * **Framework:** Spring Boot (REST API)
 * **Database:** Supabase (PostgreSQL)
+* **Deployment:** Render (Web Service)
 * **Driver:** JDBC PostgreSQL 42.6.0
 
 ### Frontend
@@ -113,3 +119,4 @@ This system was built strictly adhering to modern Object-Oriented Programming (O
 * **Language:** TypeScript
 * **Styling:** Tailwind CSS + Radix UI + Custom CSS
 * **Animations:** Motion (Framer Motion)
+* **Deployment:** Vercel
