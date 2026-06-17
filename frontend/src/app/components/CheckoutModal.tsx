@@ -18,6 +18,7 @@ type FormData = {
   address: string;
   notes: string;
   paymentMethod: "cash" | "gcash" | "card";
+  orderType: "Delivery" | "Pick-Up";
 };
 
 const DELIVERY_FEE = 50;
@@ -32,18 +33,20 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
     address: "",
     notes: "",
     paymentMethod: "cash",
+    orderType: "Delivery",
   });
   const [errors, setErrors] = useState<Partial<FormData>>({});
 
   const subtotal = items.reduce((s, i) => s + i.price * i.qty, 0);
-  const total = subtotal + DELIVERY_FEE;
+  const deliveryFee = form.orderType === "Delivery" ? DELIVERY_FEE : 0;
+  const total = subtotal + deliveryFee;
 
   const validate = () => {
     const e: Partial<FormData> = {};
     if (!form.name.trim()) e.name = "Required";
     if (!form.email.trim()) e.email = "Required";
     if (!form.phone.trim()) e.phone = "Required";
-    if (!form.address.trim()) e.address = "Required";
+    if (form.orderType === "Delivery" && !form.address.trim()) e.address = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -54,13 +57,13 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
       setIsSubmitting(true);
       
       const payload = {
-        orderType: "Delivery",
+        orderType: form.orderType,
         paymentMethod: form.paymentMethod === "cash" ? "Cash" : form.paymentMethod === "gcash" ? "GCash" : "Card",
-        additionalFee: DELIVERY_FEE,
+        additionalFee: deliveryFee,
         email: user?.email || "",
         customerName: form.name,
         contactNumber: form.phone,
-        deliverTo: form.address,
+        deliverTo: form.orderType === "Delivery" ? form.address : "Pick-Up",
         notes: form.notes,
         items: items.map(i => ({
           menuItemId: i.id,
@@ -84,11 +87,11 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
             orderNumber: responseData.transactionId || Math.random().toString(36).substring(2, 10).toUpperCase(),
             date: now.toLocaleDateString("en-PH", { year: "numeric", month: "long", day: "numeric" }),
             time: now.toLocaleTimeString("en-PH", { hour: "2-digit", minute: "2-digit" }),
-            customer: { name: form.name, email: form.email, phone: form.phone, address: form.address },
+            customer: { name: form.name, email: form.email, phone: form.phone, address: form.orderType === "Delivery" ? form.address : "Pick-Up" },
             items,
             paymentMethod: form.paymentMethod,
             subtotal,
-            deliveryFee: DELIVERY_FEE,
+            deliveryFee: deliveryFee,
             total,
             notes: form.notes || undefined,
           };
@@ -161,7 +164,7 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
               </button>
             )}
             <span style={{ fontFamily: "'Oswald', sans-serif", color: "#f0ede8", fontSize: "1.2rem", letterSpacing: "0.05em" }}>
-              {step === 1 ? "DELIVERY DETAILS" : step === 2 ? "ORDER SUMMARY" : "ORDER PLACED!"}
+              {step === 1 ? "ORDER DETAILS" : step === 2 ? "ORDER SUMMARY" : "ORDER PLACED!"}
             </span>
           </div>
           <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
@@ -199,12 +202,33 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
           <AnimatePresence mode="wait">
             {step === 1 && (
               <motion.div key="step1" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
+                
+                {/* Order Type Toggle */}
+                <div className="flex flex-col gap-2 mb-2">
+                  <label style={{ color: "#8a8070", fontSize: "0.75rem", letterSpacing: "0.08em", fontFamily: "'Oswald', sans-serif" }}>ORDER TYPE</label>
+                  <div className="flex bg-[#242320] p-1 rounded-lg border border-[#c8932a]/20">
+                    {["Delivery", "Pick-Up"].map((type) => (
+                      <button
+                        key={type}
+                        onClick={() => setForm(f => ({ ...f, orderType: type as FormData["orderType"], address: type === "Pick-Up" ? "" : f.address }))}
+                        className="flex-1 py-2 text-sm font-medium rounded-md transition-all"
+                        style={{
+                          background: form.orderType === type ? "#c8932a" : "transparent",
+                          color: form.orderType === type ? "#111110" : "#8a8070",
+                        }}
+                      >
+                        {type}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {field("FULL NAME", "name", "text", "Juan dela Cruz")}
                   {field("EMAIL", "email", "email", "juan@email.com")}
                 </div>
                 {field("PHONE NUMBER", "phone", "tel", "+63 912 345 6789")}
-                {field("DELIVERY ADDRESS", "address", "text", "Street, Barangay, City")}
+                {form.orderType === "Delivery" && field("DELIVERY ADDRESS", "address", "text", "Street, Barangay, City")}
                 <div className="flex flex-col gap-1">
                   <label style={{ color: "#8a8070", fontSize: "0.75rem", letterSpacing: "0.08em", fontFamily: "'Oswald', sans-serif" }}>ORDER NOTES (OPTIONAL)</label>
                   <textarea
@@ -221,7 +245,7 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
                   <label style={{ color: "#8a8070", fontSize: "0.75rem", letterSpacing: "0.08em", fontFamily: "'Oswald', sans-serif" }}>PAYMENT METHOD</label>
                   <div className="grid grid-cols-3 gap-3">
                     {[
-                      { key: "cash", label: "Cash on Delivery", icon: <Bike size={18} /> },
+                      { key: "cash", label: form.orderType === "Delivery" ? "Cash on Delivery" : "Pay at Store", icon: <Bike size={18} /> },
                       { key: "gcash", label: "GCash", icon: <CreditCard size={18} /> },
                       { key: "card", label: "Card", icon: <CreditCard size={18} /> },
                     ].map(({ key, label, icon }) => (
@@ -250,10 +274,12 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
                 <div className="p-4 rounded-xl space-y-2" style={{ background: "#242320" }}>
                   <div className="flex items-center gap-2 mb-3">
                     <MapPin size={15} style={{ color: "#c8932a" }} />
-                    <span style={{ fontFamily: "'Oswald', sans-serif", color: "#f0ede8", fontSize: "0.9rem", letterSpacing: "0.04em" }}>DELIVERY TO</span>
+                    <span style={{ fontFamily: "'Oswald', sans-serif", color: "#f0ede8", fontSize: "0.9rem", letterSpacing: "0.04em" }}>
+                      {form.orderType === "Delivery" ? "DELIVERY TO" : "PICK-UP BY"}
+                    </span>
                   </div>
                   <p style={{ color: "#f0ede8", fontSize: "0.9rem" }}>{form.name}</p>
-                  <p style={{ color: "#8a8070", fontSize: "0.82rem" }}>{form.address}</p>
+                  {form.orderType === "Delivery" && <p style={{ color: "#8a8070", fontSize: "0.82rem" }}>{form.address}</p>}
                   <p style={{ color: "#8a8070", fontSize: "0.82rem" }}>{form.phone}</p>
                 </div>
                 {/* Items */}
@@ -271,7 +297,7 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
                 </div>
                 {/* Totals */}
                 <div className="pt-3 border-t space-y-2" style={{ borderColor: "rgba(200,147,42,0.15)" }}>
-                  {[{ label: "Subtotal", val: subtotal }, { label: "Delivery Fee", val: DELIVERY_FEE }].map(({ label, val }) => (
+                  {[{ label: "Subtotal", val: subtotal }, { label: "Delivery Fee", val: deliveryFee }].map(({ label, val }) => (
                     <div key={label} className="flex justify-between">
                       <span style={{ color: "#8a8070", fontSize: "0.85rem" }}>{label}</span>
                       <span style={{ color: "#f0ede8", fontFamily: "'Oswald', sans-serif" }}>₱{val.toFixed(2)}</span>
@@ -296,14 +322,14 @@ export function CheckoutModal({ items, onClose, onSuccess, user }: CheckoutProps
                     Thank you, {form.name}! Your order is being prepared.
                   </p>
                   <p style={{ color: "#8a8070", fontSize: "0.85rem", marginTop: "4px" }}>
-                    Estimated delivery: 30–45 minutes
+                    {form.orderType === "Delivery" ? "Estimated delivery: 30–45 minutes" : "Estimated prep time: 15–20 minutes"}
                   </p>
                 </div>
                 <div className="p-4 rounded-xl w-full" style={{ background: "#242320" }}>
-                  <p style={{ color: "#8a8070", fontSize: "0.8rem" }}>Delivering to</p>
-                  <p style={{ color: "#f0ede8", fontSize: "0.9rem", marginTop: "4px" }}>{form.address}</p>
+                  <p style={{ color: "#8a8070", fontSize: "0.8rem" }}>{form.orderType === "Delivery" ? "Delivering to" : "Pick-up by"}</p>
+                  <p style={{ color: "#f0ede8", fontSize: "0.9rem", marginTop: "4px" }}>{form.orderType === "Delivery" ? form.address : form.name}</p>
                   <p style={{ color: "#c8932a", fontSize: "0.85rem", marginTop: "4px" }}>
-                    Payment: {form.paymentMethod === "cash" ? "Cash on Delivery" : form.paymentMethod === "gcash" ? "GCash" : "Card"}
+                    Payment: {form.paymentMethod === "cash" ? (form.orderType === "Delivery" ? "Cash on Delivery" : "Pay at Store") : form.paymentMethod === "gcash" ? "GCash" : "Card"}
                   </p>
                 </div>
                 <div className="flex flex-col gap-3 w-full">

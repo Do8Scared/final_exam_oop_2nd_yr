@@ -5,6 +5,7 @@ All notable changes to the **Garahe Ni Mateicla** project are documented in this
 ---
 
 ### June 17, 2026
+- **Feature:** Added Pick-Up vs Delivery toggle in the checkout process, dynamically calculating the delivery fee and updating form fields based on the selected option.
 - **Documentation:** Finalized comprehensive project documentation, README, and the OOP defense paper.
 - **UI:** display special details and stock quantity on menu items directly on the frontend.
 
