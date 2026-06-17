@@ -53,10 +53,12 @@ type MenuEntry = {
   image: string;
   category: string;
   tag?: string;
+  specialDetails?: string;
+  stockQuantity?: number;
 };
 
 const STATIC_MENU: MenuEntry[] = [
-  { id: 1, name: "Japanese Pancake", description: "Fluffy souffle-style pancake served with maple syrup and fresh cream.", price: 195, image: jpancake as string, category: "Mains", tag: "Best Seller" },
+  { id: 1, name: "Japanese Pancake", description: "Fluffy souffle-style pancake served with maple syrup and fresh cream.", price: 195, image: jpancake as string, category: "Mains", tag: "Best Seller", specialDetails: "[Sweetness Profile: 100% Sugar]", stockQuantity: 12 },
   { id: 2, name: "Kakitamajiru", description: "Traditional Japanese egg-drop soup with silky dashi broth and scallions.", price: 120, image: kakitama as string, category: "Soups" },
   { id: 3, name: "Ajitama Egg", description: "Marinated soft-boiled egg with soy, mirin and a perfectly jammy center.", price: 75, image: ajitama as string, category: "Add-ons", tag: "Popular" },
   { id: 4, name: "Daifuku", description: "Soft mochi filled with sweet red bean paste — a classic Japanese confection.", price: 90, image: daifuku as string, category: "Desserts" },
@@ -109,7 +111,9 @@ export default function App() {
             price: item.price,
             image: staticMatch.image || "",
             category: staticMatch.category || item.category,
-            tag: staticMatch.tag
+            tag: staticMatch.tag,
+            specialDetails: item.specialDetails,
+            stockQuantity: item.stockQuantity
           };
         });
         setMenuItems(merged);
