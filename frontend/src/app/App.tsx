@@ -6,7 +6,7 @@ import { MenuItem } from "./components/MenuItem";
 import { CheckoutModal } from "./components/CheckoutModal";
 import { LoginModal } from "./components/LoginModal";
 import { ReceiptModal, type OrderReceipt } from "./components/ReceiptModal";
-import { TransactionHistoryModal } from "./components/TransactionHistoryModal";
+import { TransactionHistoryModal, type Transaction } from "./components/TransactionHistoryModal";
 
 // Original images
 import jpancake from "../imports/Japanese_Pancake.jpg";
@@ -160,6 +160,40 @@ export default function App() {
     if (!user) { setCartOpen(false); setLoginOpen(true); return; }
     setCartOpen(false);
     setCheckoutOpen(true);
+  };
+
+  const handleViewReceipt = (txn: Transaction) => {
+    const deliveryFee = txn.orderType === "Delivery" ? 50 : 0;
+    const subtotal = txn.totalAmount - deliveryFee;
+
+    // Parse date safely
+    const [datePart, timePart] = txn.date.split(" ");
+    const receiptDate = datePart || txn.date;
+    const receiptTime = timePart ? timePart.split(".")[0] : "";
+
+    setCurrentReceipt({
+      orderNumber: txn.transactionId.split("-").slice(1).join("-") || txn.transactionId,
+      date: receiptDate,
+      time: receiptTime,
+      customer: {
+        name: txn.customerName,
+        email: user?.email || "",
+        phone: "", // not saved in history api
+        address: txn.deliverTo || "Pick-Up",
+      },
+      items: [{
+        id: 0,
+        name: "Historical Order Items",
+        price: subtotal,
+        qty: 1,
+        image: "" // no image needed
+      }],
+      paymentMethod: txn.paymentMethod,
+      subtotal,
+      deliveryFee,
+      total: txn.totalAmount,
+    });
+    setReceiptOpen(true);
   };
 
   const filtered = activeCategory === "All" ? menuItems : menuItems.filter((m) => m.category === activeCategory);
@@ -398,6 +432,7 @@ export default function App() {
           <TransactionHistoryModal
             user={user}
             onClose={() => setHistoryOpen(false)}
+            onViewReceipt={handleViewReceipt}
           />
         )}
       </AnimatePresence>

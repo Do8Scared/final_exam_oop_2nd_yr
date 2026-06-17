@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
-import { X, Receipt, Clock, Package, CreditCard, User as UserIcon } from "lucide-react";
+import { X, Receipt, Clock, Package, CreditCard, User as UserIcon, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 type HistoryModalProps = {
   user: { name: string; email: string };
   onClose: () => void;
+  onViewReceipt: (txn: Transaction) => void;
 };
 
-type Transaction = {
+export type Transaction = {
   transactionId: string;
   date: string;
   orderType: string;
@@ -17,7 +18,7 @@ type Transaction = {
   deliverTo: string;
 };
 
-export function TransactionHistoryModal({ user, onClose }: HistoryModalProps) {
+export function TransactionHistoryModal({ user, onClose, onViewReceipt }: HistoryModalProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +104,7 @@ export function TransactionHistoryModal({ user, onClose }: HistoryModalProps) {
                         <span>{txn.date || "Unknown date"}</span>
                       </div>
                     </div>
-                    <div className="text-left md:text-right">
+                    <div className="text-left md:text-right flex flex-col md:items-end">
                       <div style={{ fontFamily: "'Oswald', sans-serif", color: "#f0ede8", fontSize: "1.2rem", letterSpacing: "0.05em" }}>
                         PHP {txn.totalAmount.toFixed(2)}
                       </div>
@@ -114,23 +115,33 @@ export function TransactionHistoryModal({ user, onClose }: HistoryModalProps) {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div className="flex items-start gap-2">
-                      <UserIcon size={16} style={{ color: "#8a8070", marginTop: "2px" }} />
-                      <div>
-                        <div style={{ color: "#f0ede8" }}>{txn.customerName || "N/A"}</div>
-                        <div style={{ color: "#8a8070", fontSize: "0.8rem" }}>Customer</div>
-                      </div>
-                    </div>
-                    {txn.orderType === "Delivery" && (
+                  <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 text-sm">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 flex-1">
                       <div className="flex items-start gap-2">
-                        <Package size={16} style={{ color: "#8a8070", marginTop: "2px" }} />
+                        <UserIcon size={16} style={{ color: "#8a8070", marginTop: "2px" }} />
                         <div>
-                          <div style={{ color: "#f0ede8" }}>{txn.deliverTo || "N/A"}</div>
-                          <div style={{ color: "#8a8070", fontSize: "0.8rem" }}>Delivery Address</div>
+                          <div style={{ color: "#f0ede8" }}>{txn.customerName || "N/A"}</div>
+                          <div style={{ color: "#8a8070", fontSize: "0.8rem" }}>Customer</div>
                         </div>
                       </div>
-                    )}
+                      {txn.orderType === "Delivery" && (
+                        <div className="flex items-start gap-2">
+                          <Package size={16} style={{ color: "#8a8070", marginTop: "2px" }} />
+                          <div>
+                            <div style={{ color: "#f0ede8" }}>{txn.deliverTo || "N/A"}</div>
+                            <div style={{ color: "#8a8070", fontSize: "0.8rem" }}>Delivery Address</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <button
+                      onClick={() => onViewReceipt(txn)}
+                      className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all hover:brightness-110 md:w-auto w-full mt-2 md:mt-0"
+                      style={{ background: "rgba(200,147,42,0.15)", color: "#c8932a", border: "1px solid rgba(200,147,42,0.3)", fontFamily: "'Oswald', sans-serif", letterSpacing: "0.05em", fontSize: "0.8rem" }}
+                    >
+                      <Eye size={14} /> VIEW RECEIPT
+                    </button>
                   </div>
                 </div>
               ))}
